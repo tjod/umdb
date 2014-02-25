@@ -25,7 +25,7 @@ molecule_id INTEGER NOT NULL,
 atom_number INTEGER NOT NULL,
 name TEXT,
 value TEXT,
-PRIMARY KEY (molecule_id, atom_number)
+PRIMARY KEY (molecule_id, atom_number),
 FOREIGN KEY (molecule_id, atom_number) REFERENCES atom (molecule_id, number) ON DELETE CASCADE ON UPDATE RESTRICT
 );
 
