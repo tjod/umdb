@@ -7,6 +7,9 @@ class umdb:
         self.cursor = self.connection.cursor()
         self.molid = 0
 	self.cursor.execute("Pragma foreign_keys=1")
+	#self.cursor.execute("Pragma synchronous=OFF")
+	self.cursor.execute("Begin")
+        print "Begin"
 
     def insert_mol(self, obmol, bonds=True):
         sqlargs = [obmol.GetTitle()]
@@ -16,9 +19,19 @@ class umdb:
         self.insert_molproperties(obmol)
         self.insert_residues(obmol)
         self.insert_atoms(obmol)
-        if bonds: self.insert_bonds(obmol)
+        self.connection.commit()
+        if bonds:
+            self.insert_bonds(obmol)
+
+    def insert_molproperty(self, name, value):
+        sql = "Insert Into molecule_property (molecule_id, name, value) Values (?,?,?)"
+        sqlargs = [self.molid, name, value]
+        self.cursor.execute(sql, sqlargs)
+
+    def close(self):
         self.connection.commit()
         self.connection.close()
+        print "End"
 
     def insert_molproperties(self, obmol):
         sql = "Insert into molecule_property (molecule_id, name, value) Values (?,?,?)"
@@ -38,25 +51,23 @@ class umdb:
 
     def insert_atoms(self, obmol):
         atomsql = "Insert into atom (molecule_id, number, atomic_number, symbol, type, isotope, spin, formal_charge, partial_charge) Values (?,?,?,?,?,?,?,?,?)"
-        coordsql = "Insert into coord (atom_id, x, y, z) Values (?,?,?,?)";
-        ressql = "Insert into residue_atom (res_id, atom_id, name) Select res_id,?,? From residue Where molecule_id=? And number=? And chain=?"
+        coordsql = "Insert into coord (molecule_id, atom_number, x, y, z) Values (?,?,?,?,?)";
+        ressql = "Insert into residue_atom (molecule_id, res_number, chain, atom_number, name) Values (?,?,?,?,?)"
         for atom in OBMolAtomIter(obmol):
             sqlargs = [self.molid, atom.GetIdx(), atom.GetAtomicNum(), OBElementTable().GetSymbol(atom.GetAtomicNum()), atom.GetType(), atom.GetIsotope(), atom.GetSpinMultiplicity(), atom.GetFormalCharge(), atom.GetPartialCharge()]
             self.cursor.execute(atomsql, sqlargs)
-            atom_id = self.cursor.lastrowid
             # store atom coords
-            sqlargs = [atom_id, atom.x(), atom.y(), atom.z()]
+            sqlargs = [self.molid, atom.GetIdx(), atom.x(), atom.y(), atom.z()]
             self.cursor.execute(coordsql, sqlargs)
             # store atom name in residue (pdb)
             if atom.HasResidue():
                 res = atom.GetResidue()
                 atom_name = res.GetAtomID(atom)
-                sqlargs = [atom_id, atom_name, self.molid, res.GetNum(), res.GetChain()]
+                sqlargs = [self.molid,  res.GetNum(), res.GetChain(), atom.GetIdx(), atom_name]
                 self.cursor.execute(ressql, sqlargs)
 
     def insert_bonds(self, obmol):
-        #sql = "Insert into bond (molecule_id, a_number, b_number, bond_order) Values (?,?,?,?)"
-        sql = "Insert into bond (a_id, b_id, bond_order) Select a.atom_id, b.atom_id, ? from atom a join atom b Using (molecule_id) where molecule_id=? and a.number=? and b.number=? "
+        sql = "Insert into bond (molecule_id, from_atom, to_atom, bond_order) Values (?,?,?,?)"
         for bond in OBMolBondIter(obmol):
-            sqlargs = [bond.GetBondOrder(), self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()]
+            sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), bond.GetBondOrder()]
             self.cursor.execute(sql, sqlargs)

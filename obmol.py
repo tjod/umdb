@@ -23,7 +23,15 @@ out = sys.argv[2]
 
 obmol = OBMol()
 notatend = obconversion.ReadFile(obmol, file)
+n = 0
+umdbout = umdb(out)
 while notatend:
-  umdb(out).insert_mol(obmol)
+  n += 1
+  sys.stderr.write(str(n)+"\r")
+  umdbout.insert_mol(obmol)
+  umdbout.insert_molproperty("File source", file)
   obmol = OBMol()
   notatend = obconversion.Read(obmol)
+  #if n > 50:
+  #  break
+umdbout.close()
