@@ -75,7 +75,6 @@ angle FLOAT,
 c_number INTEGER,
 torsion FLOAT,
 PRIMARY KEY (molecule_id, atom_number),
-FOREIGN KEY (molecule_id, atom_number) REFERENCES atom (molecule_id, number) ON DELETE CASCADE ON UPDATE RESTRICT,
 FOREIGN KEY (molecule_id, a_number) REFERENCES atom (molecule_id, number) ON DELETE CASCADE ON UPDATE RESTRICT,
 FOREIGN KEY (molecule_id, b_number) REFERENCES atom (molecule_id, number) ON DELETE CASCADE ON UPDATE RESTRICT,
 FOREIGN KEY (molecule_id, c_number) REFERENCES atom (molecule_id, number) ON DELETE CASCADE ON UPDATE RESTRICT
