@@ -19,9 +19,11 @@ class umdb:
         self.insert_molproperties(obmol)
         self.insert_residues(obmol)
         self.insert_atoms(obmol)
+        self.insert_atomproperties(obmol)
         self.connection.commit()
         if bonds:
             self.insert_bonds(obmol)
+            self.insert_bondproperties(obmol)
 
     def insert_molproperty(self, name, value):
         sql = "Insert Into molecule_property (molecule_id, name, value) Values (?,?,?)"
@@ -32,6 +34,17 @@ class umdb:
         self.connection.commit()
         self.connection.close()
         print "End"
+
+    def insert_atomproperties(self, obmol):
+        sql = "Insert into atom_property (molecule_id, atom_number, name, value) Values (?,?,?,?)"
+        for atom in OBMolAtomIter(obmol):
+          for p in atom.GetData():
+            if toPairData(p).GetDataType() == PairData:
+                if p.GetAttribute() == 'OpenBabel Symmetry Classes':
+                    pass
+                else:
+                    sqlargs = [self.molid, atom.GetIdx(), p.GetAttribute(), p.GetValue()]
+                    self.cursor.execute(sql, sqlargs)
 
     def insert_molproperties(self, obmol):
         sql = "Insert into molecule_property (molecule_id, name, value) Values (?,?,?)"
@@ -71,3 +84,14 @@ class umdb:
         for bond in OBMolBondIter(obmol):
             sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), bond.GetBondOrder()]
             self.cursor.execute(sql, sqlargs)
+
+    def insert_bondproperties(self, obmol):
+        sql = "Insert into bond_property (molecule_id, from_atom, to_atom, name, value) Values (?,?,?,?,?)"
+        for bond in OBMolBondIter(obmol):
+          for p in bond.GetData():
+            if toPairData(p).GetDataType() == PairData:
+                if p.GetAttribute() == 'OpenBabel Symmetry Classes':
+                    pass
+                else:
+                    sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), p.GetAttribute(), p.GetValue()]
+                    self.cursor.execute(sql, sqlargs)
