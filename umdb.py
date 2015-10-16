@@ -6,10 +6,14 @@ class umdb:
         self.connection = sqlite3.connect(out)
         self.cursor = self.connection.cursor()
         self.molid = 0
-	self.cursor.execute("Pragma foreign_keys=1")
+	self.cursor.execute("Pragma foreign_keys=ON")
 	#self.cursor.execute("Pragma synchronous=OFF")
 	self.cursor.execute("Begin")
         print "Begin"
+
+    def create(self):
+	    script = open('umdb.sql').read()
+	    self.cursor.executescript(script)
 
     def insert_mol(self, obmol, bonds=True):
         sqlargs = [obmol.GetTitle()]
@@ -26,7 +30,7 @@ class umdb:
             self.insert_bondproperties(obmol)
 
     def insert_molproperty(self, name, value):
-        sql = "Insert Into molecule_property (molecule_id, name, value) Values (?,?,?)"
+        sql = "Insert Into property (molecule_id, name, value) Values (?,?,?)"
         sqlargs = [self.molid, name, value]
         self.cursor.execute(sql, sqlargs)
 
@@ -47,7 +51,7 @@ class umdb:
                     self.cursor.execute(sql, sqlargs)
 
     def insert_molproperties(self, obmol):
-        sql = "Insert into molecule_property (molecule_id, name, value) Values (?,?,?)"
+        sql = "Insert into property (molecule_id, name, value) Values (?,?,?)"
         for p in obmol.GetData():
             if toPairData(p).GetDataType() == PairData:
                 if p.GetAttribute() == 'OpenBabel Symmetry Classes':
@@ -63,11 +67,14 @@ class umdb:
             self.cursor.execute(ressql, sqlargs)
 
     def insert_atoms(self, obmol):
-        atomsql = "Insert into atom (molecule_id, number, atomic_number, symbol, type, isotope, spin, formal_charge, partial_charge) Values (?,?,?,?,?,?,?,?,?)"
+        atomsql = "Insert into atom (molecule_id, atom_number, z, symbol, a, spin, charge) Values (?,?,?,?,?,?,?)"
         coordsql = "Insert into coord (molecule_id, atom_number, x, y, z) Values (?,?,?,?,?)";
-        ressql = "Insert into residue_atom (molecule_id, res_number, chain, atom_number, name) Values (?,?,?,?,?)"
+        ressql = "Insert into residue_atom (molecule_id, residue_number, residue_chain, atom_number, name) Values (?,?,?,?,?)"
         for atom in OBMolAtomIter(obmol):
-            sqlargs = [self.molid, atom.GetIdx(), atom.GetAtomicNum(), OBElementTable().GetSymbol(atom.GetAtomicNum()), atom.GetType(), atom.GetIsotope(), atom.GetSpinMultiplicity(), atom.GetFormalCharge(), atom.GetPartialCharge()]
+	    isotope = atom.GetIsotope()
+	    charge = int(atom.GetFormalCharge())
+	    if isotope == 0: isotope = None #isotope = int(OBIsotopeTable().GetExactMass (atom.GetAtomicNum()))
+            sqlargs = [self.molid, atom.GetIdx(), atom.GetAtomicNum(), OBElementTable().GetSymbol(atom.GetAtomicNum()), isotope, atom.GetSpinMultiplicity(), charge]
             self.cursor.execute(atomsql, sqlargs)
             # store atom coords
             sqlargs = [self.molid, atom.GetIdx(), atom.x(), atom.y(), atom.z()]
@@ -95,3 +102,10 @@ class umdb:
                 else:
                     sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), p.GetAttribute(), p.GetValue()]
                     self.cursor.execute(sql, sqlargs)
+
+import sys
+if __name__ == '__main__':
+
+	if len(sys.argv) == 1: exit(0)
+	db = sys.argv[1]
+	u = umbd(db)
