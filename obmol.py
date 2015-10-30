@@ -4,6 +4,8 @@ import os
 from openbabel import *
 from umdb import umdb
 
+# create a umdb from any molecular structure file that openbabel can read
+
 if len(sys.argv) < 2:
   print "usage: obmol.py input_file [output_database]"
   exit()
@@ -31,14 +33,18 @@ if os.path.exists(out):
 
 obmol = OBMol()
 notatend = obconversion.ReadFile(obmol, file)
+obconversion.SetOutFormat('can')
 n = 0
 umdbout = umdb(out)
 umdbout.create()
 while notatend:
   n += 1
   sys.stderr.write(str(n)+"\r")
+  #print obmol.GetDimension()
   umdbout.insert_mol(obmol)
   umdbout.insert_molproperty("File source", file)
+  cansmiles = obconversion.WriteString(obmol,1).split()[0]
+  umdbout.insert_molproperty("OpenBabel cansmiles", cansmiles)
   obmol = OBMol()
   notatend = obconversion.Read(obmol)
   #if n > 50:
