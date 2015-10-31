@@ -29,6 +29,7 @@ class umdb:
 
 	def stereoCfgToDict(self, cfg, obmol):
 		stereo = dict()
+		stereo['specified'] = cfg.specified
 		stereo['center'] = obmol.GetAtomById(cfg.center).GetIdx()
 		stereo['winding'] = 'Clockwise' if cfg.winding == OBStereo.Clockwise else 'AntiClockwise'
 		stereo['view'] = 'From' if cfg.view == OBStereo.ViewFrom else 'Towards'
@@ -38,6 +39,7 @@ class umdb:
 
 	def cistransCfgToDict(self, cfg, obmol):
 		cistrans = dict()
+		cistrans['specified'] = cfg.specified
 		cistrans['begin'] = obmol.GetAtomById(cfg.begin).GetIdx()
 		cistrans['end']   = obmol.GetAtomById(cfg.end).GetIdx()
 		cistrans['shape'] = 'U' if cfg.shape == OBStereo.ShapeU else 'Z' if cfg.shape == OBStereo.ShapeZ else '4'
@@ -93,12 +95,12 @@ class umdb:
 				if ts.IsValid():
 					cfg = ts.GetConfig()
 					#print 'stereo',self.stereoCfgToDict(cfg, obmol)
-					self.insert_molproperty('OBTetrahedralStereo', json.dumps(self.stereoCfgToDict(cfg, obmol)))
+					if cfg.specified: self.insert_molproperty('OBTetrahedralStereo', json.dumps(self.stereoCfgToDict(cfg, obmol)))
 				else:
 					ct = toCisTransStereo(p)
 					cfg = ct.GetConfig()
 					#print 'cistrans',self.cistransCfgToDict(cfg, obmol)
-					self.insert_molproperty('OBCisTransStereo', json.dumps(self.cistransCfgToDict(cfg, obmol)))
+					if cfg.specified: self.insert_molproperty('OBCisTransStereo', json.dumps(self.cistransCfgToDict(cfg, obmol)))
 
 	def insert_residues(self, obmol):
 		ressql = "Insert into residue (molecule_id, name, number, chain) Values (?,?,?,?)"
@@ -287,7 +289,7 @@ class umdb:
 				incan = cansmi.WriteString(tmpmol,1)
 				mycan = cansmi.WriteString(mol,1)
 				if mycan != incan:
-					print 'Error:', incan, mycan
+					print 'Error:', mol.GetTitle(),incan,tmpmol.GetDimension(), mycan,mol.GetDimension()
 				else:
 					pass
 					#print 'Match:', incan, mycan
