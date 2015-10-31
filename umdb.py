@@ -32,8 +32,8 @@ class umdb:
 		stereo['center'] = obmol.GetAtomById(cfg.center).GetIdx()
 		stereo['winding'] = 'Clockwise' if cfg.winding == OBStereo.Clockwise else 'AntiClockwise'
 		stereo['view'] = 'From' if cfg.view == OBStereo.ViewFrom else 'Towards'
-		stereo['look'] = obmol.GetAtomById(cfg.from_or_towards).GetIdx()
-		stereo['refs'] = [obmol.GetAtomById(r).GetIdx() for r in cfg.refs]
+		stereo['look'] = 'None' if cfg.from_or_towards == OBStereo.NoRef else 'Implicit' if cfg.from_or_towards == OBStereo.ImplicitRef else obmol.GetAtomById(cfg.from_or_towards).GetIdx()
+		stereo['refs'] = ['None' if r == OBStereo.NoRef else 'Implicit' if r == OBStereo.ImplicitRef else obmol.GetAtomById(r).GetIdx() for r in cfg.refs]
 		return stereo
 
 	def cistransCfgToDict(self, cfg, obmol):
@@ -196,10 +196,10 @@ class umdb:
 			stereo = json.loads(row['value'])
 			cfg = OBTetrahedralConfig()
 			cfg.center = stereo['center']
-			cfg.from_or_towards = stereo['look']
+			cfg.from_or_towards = OBStereo.NoRef if stereo['look'] == 'None' else OBStereo.ImplicitRef if stereo['look'] == 'Implicit' else stereo['look']
 			cfg.view = OBStereo.ViewFrom if stereo['view'] == 'From' else OBStereo.ViewTowards
 			cfg.winding = OBStereo.Clockwise if stereo['winding'] == 'Clockwise' else OBStereo.AntiClockwise
-			cfg.refs = stereo['refs']
+			cfg.refs = [OBStereo.NoRef if r == 'None' else OBStereo.ImplicitRef if r == 'Implicit' else r for r in stereo['refs']]
 			cfg.specified = True
 			#print cfg.center, cfg.winding, cfg.refs, cfg.from_or_towards, cfg.view, cfg.specified
 			ts = OBTetrahedralStereo(mol)
@@ -216,8 +216,7 @@ class umdb:
 			cfg.begin = cistrans['begin']
 			cfg.end   = cistrans['end']
 			cfg.shape = OBStereo.ShapeU if cistrans['shape'] == 'U' else OBStereo.ShapeZ if cistrans['shape'] == 'Z' else OBStereo.Shape4
-			refs = [OBStereo.NoRef if r == 'None' else OBStereo.ImplicitRef if r == 'Implicit' else r for r in cistrans['refs']]
-			cfg.refs = refs
+			cfg.refs = [OBStereo.NoRef if r == 'None' else OBStereo.ImplicitRef if r == 'Implicit' else r for r in cistrans['refs']]
 			cfg.specified = True
 			cs = OBCisTransStereo(mol)
 			cs.SetConfig(cfg)
