@@ -131,7 +131,7 @@ class umdb:
 				sqlargs = [self.molid,  res.GetNum(), res.GetChain(), atom.GetIdx(), atom_name]
 				self.cursor.execute(ressql, sqlargs)
 			atype = atom.GetType()
-			if atype: self.insert_atomproperty(atom.GetIdx(), 'Type', atype)
+			if atype: self.insert_atomproperty(atom.GetIdx(), 'OBType', atype)
 			partial = atom.GetPartialCharge()
 			#if partial: self.insert_atomproperty(atom.GetIdx(), 'PartialCharge', partial)
 
@@ -145,20 +145,12 @@ class umdb:
 		for bond in OBMolBondIter(obmol):
 			sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), bond.GetBondOrder()]
 			self.cursor.execute(sql, sqlargs)
-		if bond.IsUp() or bond.IsDown() or bond.IsWedge() or bond.IsHash():
-			print bond
-		#if bond.GetFlags() != 128:
-	#		flags = bond.GetFlags()
-	#		print flags & OBBond.Wedge, flags & OBBond.Hash
 
 	def insert_bondproperties(self, obmol):
 		sql = "Insert into bond_property (molecule_id, from_atom, to_atom, name, value) Values (?,?,?,?,?)"
 		for bond in OBMolBondIter(obmol):
-		  for p in bond.GetData():
-			  if toPairData(p).GetDataType() == PairData:
-				if p.GetAttribute() == 'OpenBabel Symmetry Classes':
-					pass
-				else:
+			for p in bond.GetData():
+				if toPairData(p).GetDataType() == PairData:
 					sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), p.GetAttribute(), p.GetValue()]
 					self.cursor.execute(sql, sqlargs)
 
@@ -260,13 +252,14 @@ class umdb:
 		sql = "Select molecule_id,created,charge,name From molecule"
 		molcursor = self.connection.cursor()
 		molcursor.execute(sql)
+		mol = OBMol()
 		for row in molcursor:
 			if row['molecule_id']:
 				imol = int(row['molecule_id'])
 			else:
 				print 'molecule id error'
 				exit(0)
-			mol = OBMol()
+			mol.Clear()
 			mol.BeginModify()
 			if row['name']:
 				title = str(row['name'])
@@ -282,17 +275,22 @@ class umdb:
 
 			# is the constructed molecule the same as input?  need valid smiles property
 			# compare cansmiles for each
-			cansmi = OBConversion()
-			cansmi.SetOutFormat('can')
-			mycan = cansmi.WriteString(mol,1).split()[0]
 			self.cursor.execute("Select value From property Where molecule_id=? And name like '%cansmi%'", [imol])
-			insmi =  str(self.cursor.fetchone()[0])
-			tmpmol = OBMol()
-			cansmi.SetInFormat('smi')
-			cansmi.ReadString(tmpmol, insmi)
-			incan = cansmi.WriteString(tmpmol,1).split()[0]
-			if mycan != incan:
-				print 'Error:', row['name'], incan, mycan
+			for row in self.cursor:
+				insmi =  str(row['value'])
+				cansmi = OBConversion()
+				cansmi.SetOptions("-n", cansmi.OUTOPTIONS) # no name
+				cansmi.SetInFormat('smi')
+				cansmi.SetOutFormat('can')
+				tmpmol = OBMol()
+				cansmi.ReadString(tmpmol, insmi)
+				incan = cansmi.WriteString(tmpmol,1)
+				mycan = cansmi.WriteString(mol,1)
+				if mycan != incan:
+					print 'Error:', incan, mycan
+				else:
+					pass
+					#print 'Match:', incan, mycan
 		self.close()
 
 import sys

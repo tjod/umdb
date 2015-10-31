@@ -17,6 +17,7 @@ fhead, ftail = os.path.split(file)
 filename, fileext = os.path.splitext(ftail)
 fileext = fileext.replace(".","")
 obconversion = OBConversion()
+obconversion.SetOptions("-n", obconversion.OUTOPTIONS) # no name
 if obconversion.SetInFormat(fileext):
   pass
 else:
@@ -43,8 +44,9 @@ while notatend:
   #print obmol.GetDimension()
   umdbout.insert_mol(obmol)
   umdbout.insert_molproperty("File source", file)
-  cansmiles = obconversion.WriteString(obmol,1).split()[0]
-  umdbout.insert_molproperty("OpenBabel cansmiles", cansmiles)
+  if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 150:
+	  cansmiles = obconversion.WriteString(obmol,1)
+	  umdbout.insert_molproperty("OpenBabel cansmiles", cansmiles)
   obmol = OBMol()
   notatend = obconversion.Read(obmol)
   #if n > 50:
