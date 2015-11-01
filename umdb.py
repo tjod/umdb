@@ -173,14 +173,15 @@ class umdb:
 				if row['x'] and row['y'] and row['z']:
 					atom.SetVector(float(row['x']), float(row['y']), float(row['z']))
 				else:
-					mol.SetDimension(0)
+					pass
+					#mol.SetDimension(0)
 				mol.AddAtom(atom)
 
 	def set_stereo(self, imol, mol):
+		# deal with stereo atoms in mol
 		mol.DeleteData(StereoData)
 		self.set_tetrahedral_stereo(imol, mol)
 		self.set_cistrans_stereo(imol, mol)
-		# deal with stereo atoms in mol
 
 	def set_tetrahedral_stereo(self, imol, mol):
 		sql = "Select molecule_id, value From property Where molecule_id = ? And name = 'OBTetrahedralStereo'"
@@ -258,6 +259,7 @@ class umdb:
 		for row in molcursor:
 			if row['molecule_id']:
 				imol = int(row['molecule_id'])
+				sys.stderr.write(str(imol)+'\r')
 			else:
 				print 'molecule id error'
 				exit(0)
@@ -272,6 +274,12 @@ class umdb:
 			self.make_atoms(imol, mol)
 			self.make_bonds(imol, mol)
 			mol.EndModify()
+			if mol.Has3D():
+				mol.SetDimension(3)
+			elif mol.Has2D():
+				mol.SetDimension(2)
+			else:
+				mol.SetDimension(0)
 			self.set_stereo(imol, mol)
 			#self.test_stereo(mol)
 
@@ -289,7 +297,7 @@ class umdb:
 				incan = cansmi.WriteString(tmpmol,1)
 				mycan = cansmi.WriteString(mol,1)
 				if mycan != incan:
-					print 'Error:', mol.GetTitle(),incan,tmpmol.GetDimension(), mycan,mol.GetDimension()
+					print 'Mismatch:', mol.GetTitle(), incan, mycan
 				else:
 					pass
 					#print 'Match:', incan, mycan

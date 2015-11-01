@@ -12,6 +12,7 @@ CREATE TABLE property (
                 value VARCHAR NOT NULL,
 		FOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE INDEX property_idx ON property (molecule_id);
 
 
 CREATE TABLE atom (
@@ -47,6 +48,7 @@ CREATE TABLE atom_property (
                 value VARCHAR NOT NULL,
 		FOREIGN KEY (molecule_id, atom_number) REFERENCES atom (molecule_id, atom_number) ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE INDEX atom_property_idx ON atom_property (molecule_id, atom_number);
 
 CREATE TABLE bond_property (
                 molecule_id INTEGER NOT NULL,
@@ -56,6 +58,7 @@ CREATE TABLE bond_property (
                 value VARCHAR NOT NULL,
 		FOREIGN KEY (molecule_id, from_atom, to_atom) REFERENCES bond (molecule_id, from_atom, to_atom) ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE INDEX bond_property_idx ON bond_property (molecule_id, from_atom, to_atom);
 
 
 CREATE TABLE coord (
