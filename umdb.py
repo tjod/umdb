@@ -31,10 +31,16 @@ class umdb:
 		stereo = dict()
 		stereo['specified'] = cfg.specified
 		stereo['center'] = obmol.GetAtomById(cfg.center).GetIdx()
-		stereo['winding'] = 'Clockwise' if cfg.winding == OBStereo.Clockwise else 'AntiClockwise'
-		stereo['view'] = 'From' if cfg.view == OBStereo.ViewFrom else 'Towards'
-		stereo['look'] = 'None' if cfg.from_or_towards == OBStereo.NoRef else 'Implicit' if cfg.from_or_towards == OBStereo.ImplicitRef else obmol.GetAtomById(cfg.from_or_towards).GetIdx()
-		stereo['refs'] = ['None' if r == OBStereo.NoRef else 'Implicit' if r == OBStereo.ImplicitRef else obmol.GetAtomById(r).GetIdx() for r in cfg.refs]
+		stereo['winding'] = 'Clockwise' if cfg.winding == OBStereo.Clockwise \
+				else 'AntiClockwise'
+		stereo['view'] = 'From' if cfg.view == OBStereo.ViewFrom \
+				else 'Towards'
+		stereo['look'] = 'None' if cfg.from_or_towards == OBStereo.NoRef \
+				else 'Implicit' if cfg.from_or_towards == OBStereo.ImplicitRef \
+				else obmol.GetAtomById(cfg.from_or_towards).GetIdx()
+		stereo['refs'] = ['None' if r == OBStereo.NoRef \
+				else 'Implicit' if r == OBStereo.ImplicitRef \
+				else obmol.GetAtomById(r).GetIdx() for r in cfg.refs]
 		return stereo
 
 	def cistransCfgToDict(self, cfg, obmol):
@@ -42,9 +48,12 @@ class umdb:
 		cistrans['specified'] = cfg.specified
 		cistrans['begin'] = obmol.GetAtomById(cfg.begin).GetIdx()
 		cistrans['end']   = obmol.GetAtomById(cfg.end).GetIdx()
-		cistrans['shape'] = 'U' if cfg.shape == OBStereo.ShapeU else 'Z' if cfg.shape == OBStereo.ShapeZ else '4'
-		#cistrans['refs'] = ['None' if r == 4294967295 else 'Implicit' if r == 4294967294 else obmol.GetAtomById(r).GetIdx() for r in cfg.refs]
-		cistrans['refs'] = ['None' if r == OBStereo.NoRef else 'Implicit' if r == OBStereo.ImplicitRef else obmol.GetAtomById(r).GetIdx() for r in cfg.refs]
+		cistrans['shape'] = 'U' if cfg.shape == OBStereo.ShapeU \
+				else 'Z' if cfg.shape == OBStereo.ShapeZ \
+				else '4'
+		cistrans['refs'] = ['None' if r == OBStereo.NoRef \
+				else 'Implicit' if r == OBStereo.ImplicitRef \
+				else obmol.GetAtomById(r).GetIdx() for r in cfg.refs]
 		return cistrans
 
 	def insert_mol(self, obmol, bonds=True):
@@ -95,12 +104,14 @@ class umdb:
 				if ts.IsValid():
 					cfg = ts.GetConfig()
 					#print 'stereo',self.stereoCfgToDict(cfg, obmol)
-					if cfg.specified: self.insert_molproperty('OBTetrahedralStereo', json.dumps(self.stereoCfgToDict(cfg, obmol)))
+					if cfg.specified:
+						self.insert_molproperty('OBTetrahedralStereo', json.dumps(self.stereoCfgToDict(cfg, obmol)))
 				else:
 					ct = toCisTransStereo(p)
 					cfg = ct.GetConfig()
 					#print 'cistrans',self.cistransCfgToDict(cfg, obmol)
-					if cfg.specified: self.insert_molproperty('OBCisTransStereo', json.dumps(self.cistransCfgToDict(cfg, obmol)))
+					if cfg.specified:
+						self.insert_molproperty('OBCisTransStereo', json.dumps(self.cistransCfgToDict(cfg, obmol)))
 
 	def insert_residues(self, obmol):
 		ressql = "Insert into residue (molecule_id, name, number, chain) Values (?,?,?,?)"
@@ -118,8 +129,10 @@ class umdb:
 			charge = int(atom.GetFormalCharge())
 			spin = int(atom.GetSpinMultiplicity())
 			name = atom.GetTitle()
-			if isotope == 0: isotope = None #isotope = int(OBIsotopeTable().GetExactMass (atom.GetAtomicNum()))
-			if spin == 0: spin = None
+			if isotope == 0:
+				isotope = None #isotope = int(OBIsotopeTable().GetExactMass (atom.GetAtomicNum()))
+			if spin == 0:
+				spin = None
 			sqlargs = [self.molid, atom.GetIdx(), atom.GetAtomicNum(), OBElementTable().GetSymbol(atom.GetAtomicNum()), name, isotope, spin, charge]
 			self.cursor.execute(atomsql, sqlargs)
 			# store atom coords
@@ -133,9 +146,11 @@ class umdb:
 				sqlargs = [self.molid,  res.GetNum(), res.GetChain(), atom.GetIdx(), atom_name]
 				self.cursor.execute(ressql, sqlargs)
 			atype = atom.GetType()
-			if atype: self.insert_atomproperty(atom.GetIdx(), 'OBType', atype)
+			if atype:
+				self.insert_atomproperty(atom.GetIdx(), 'OBType', atype)
 			partial = atom.GetPartialCharge()
-			#if partial: self.insert_atomproperty(atom.GetIdx(), 'PartialCharge', partial)
+			#if partial:
+				#self.insert_atomproperty(atom.GetIdx(), 'PartialCharge', partial)
 
 			# goes into molecule property now
 			#if facade.HasTetrahedralStereo(atom.GetId()):
@@ -166,15 +181,16 @@ class umdb:
 				atomid = int(row['atom_number'])
 				atom = OBAtom()
 				atom.SetId(atomid)
-				if row['atomic_number']: atom.SetAtomicNum(int(row['atomic_number']))
-				if row['a']: atom.SetIsotope(int(row['a']))
-				if row['charge']: atom.SetFormalCharge(int(row['charge']))
-				if row['spin']: atom.SetSpinMultiplicity(int(row['spin']))
+				if row['atomic_number']:
+					atom.SetAtomicNum(int(row['atomic_number']))
+				if row['a']:
+					atom.SetIsotope(int(row['a']))
+				if row['charge']:
+					atom.SetFormalCharge(int(row['charge']))
+				if row['spin']:
+					atom.SetSpinMultiplicity(int(row['spin']))
 				if row['x'] and row['y'] and row['z']:
 					atom.SetVector(float(row['x']), float(row['y']), float(row['z']))
-				else:
-					pass
-					#mol.SetDimension(0)
 				mol.AddAtom(atom)
 
 	def set_stereo(self, imol, mol):
@@ -191,10 +207,16 @@ class umdb:
 			stereo = json.loads(row['value'])
 			cfg = OBTetrahedralConfig()
 			cfg.center = stereo['center']
-			cfg.from_or_towards = OBStereo.NoRef if stereo['look'] == 'None' else OBStereo.ImplicitRef if stereo['look'] == 'Implicit' else stereo['look']
-			cfg.view = OBStereo.ViewFrom if stereo['view'] == 'From' else OBStereo.ViewTowards
-			cfg.winding = OBStereo.Clockwise if stereo['winding'] == 'Clockwise' else OBStereo.AntiClockwise
-			cfg.refs = [OBStereo.NoRef if r == 'None' else OBStereo.ImplicitRef if r == 'Implicit' else r for r in stereo['refs']]
+			cfg.from_or_towards = OBStereo.NoRef if stereo['look'] == 'None' \
+					else OBStereo.ImplicitRef if stereo['look'] == 'Implicit' \
+					else stereo['look']
+			cfg.view = OBStereo.ViewFrom if stereo['view'] == 'From' \
+					else OBStereo.ViewTowards
+			cfg.winding = OBStereo.Clockwise if stereo['winding'] == 'Clockwise' \
+					else OBStereo.AntiClockwise
+			cfg.refs = [OBStereo.NoRef if r == 'None' \
+					else OBStereo.ImplicitRef if r == 'Implicit' \
+					else r for r in stereo['refs']]
 			cfg.specified = True
 			#print cfg.center, cfg.winding, cfg.refs, cfg.from_or_towards, cfg.view, cfg.specified
 			ts = OBTetrahedralStereo(mol)
@@ -210,8 +232,12 @@ class umdb:
 			cfg = OBCisTransConfig()
 			cfg.begin = cistrans['begin']
 			cfg.end   = cistrans['end']
-			cfg.shape = OBStereo.ShapeU if cistrans['shape'] == 'U' else OBStereo.ShapeZ if cistrans['shape'] == 'Z' else OBStereo.Shape4
-			cfg.refs = [OBStereo.NoRef if r == 'None' else OBStereo.ImplicitRef if r == 'Implicit' else r for r in cistrans['refs']]
+			cfg.shape = OBStereo.ShapeU if cistrans['shape'] == 'U' \
+					else OBStereo.ShapeZ if cistrans['shape'] == 'Z' \
+					else OBStereo.Shape4
+			cfg.refs = [OBStereo.NoRef if r == 'None' \
+					else OBStereo.ImplicitRef if r == 'Implicit' \
+					else r for r in cistrans['refs']]
 			cfg.specified = True
 			cs = OBCisTransStereo(mol)
 			cs.SetConfig(cfg)
@@ -223,9 +249,12 @@ class umdb:
 		self.cursor.execute(sql, sqlargs)
 		for row in self.cursor:
 			bond = OBBond()
-			if row['from_atom']:  from_atom = mol.GetAtomById(int(row['from_atom']))
-			if row['to_atom']:	to_atom	= mol.GetAtomById(int(row['to_atom']))
-			if row['bond_order']: bond_order = int(row['bond_order'])
+			if row['from_atom']:
+				from_atom = mol.GetAtomById(int(row['from_atom']))
+			if row['to_atom']:
+				to_atom	= mol.GetAtomById(int(row['to_atom']))
+			if row['bond_order']:
+				bond_order = int(row['bond_order'])
 			bond.SetBegin(from_atom)
 			bond.SetEnd(to_atom)
 			bond.SetBondOrder(bond_order)
@@ -285,8 +314,10 @@ class umdb:
 
 			# is the constructed molecule the same as input?  need valid smiles property
 			# compare cansmiles for each
-			self.cursor.execute("Select value From property Where molecule_id=? And name like '%cansmi%'", [imol])
+			#self.cursor.execute("Select name,value From property Where molecule_id=? And name like '%smiles%'", [imol])
+			self.cursor.execute("Select name,value From property Where molecule_id=? And name = 'OpenBabel cansmiles'", [imol])
 			for row in self.cursor:
+				name =  str(row['name'])
 				insmi =  str(row['value'])
 				cansmi = OBConversion()
 				cansmi.SetOptions("-n", cansmi.OUTOPTIONS) # no name
@@ -297,7 +328,7 @@ class umdb:
 				incan = cansmi.WriteString(tmpmol,1)
 				mycan = cansmi.WriteString(mol,1)
 				if mycan != incan:
-					print 'Mismatch:', mol.GetTitle(), incan, mycan
+					print 'Mismatch:', name, mol.GetTitle(), insmi, incan, mycan
 				else:
 					pass
 					#print 'Match:', incan, mycan
@@ -306,6 +337,7 @@ class umdb:
 import sys
 if __name__ == '__main__':
 
-	if len(sys.argv) == 1: exit(0)
+	if len(sys.argv) == 1:
+		exit(0)
 	db = sys.argv[1]
 	u = umdb(db)
