@@ -98,6 +98,7 @@ class umdb:
 		#sql = "Insert into property (molecule_id, name, value) Values (?,?,?)"
 		for p in obmol.GetData():
 			if p.GetDataType() == PairData:
+				if p.GetAttribute() == 'OpenBabel Symmetry Classes': continue
 				self.insert_molproperty(p.GetAttribute(), p.GetValue())
 			elif p.GetDataType() == StereoData:
 				ts = toTetrahedralStereo(p)
@@ -280,6 +281,34 @@ class umdb:
 					cistrans = self.cistransCfgToDict(cfg, mol)
 					print cistrans
 
+	def mol_compare(self, imol, mol):
+		# is the constructed molecule the same as input?  need valid smiles property
+		# compare cansmiles for each
+		#self.cursor.execute("Select name,value From property Where molecule_id=? And name like '%smiles%'", [imol])
+		self.cursor.execute("Select name,value From property Where molecule_id=? And name = 'OpenBabel cansmiles'", [imol])
+		for row in self.cursor:
+			name =  str(row['name'])
+			insmi =  str(row['value'])
+			obc = OBConversion()
+			obc.SetInFormat('smi')
+			obc.SetOutFormat('can')
+			obc.SetOptions("-n", obc.OUTOPTIONS) # no name
+			tmpmol = OBMol()
+			obc.ReadString(tmpmol, insmi)
+			incan = obc.WriteString(tmpmol,1)
+			mycan = obc.WriteString(mol,1)
+			if mycan != incan:
+				# one last try for dot-separated smiles that may have re-ordered fragments
+				myfrags = mycan.split('.')
+				infrags = incan.split('.')
+				myfrags.sort()
+				infrags.sort()
+				if myfrags != infrags:
+					print 'Mismatch:', name, mol.GetTitle(), insmi, incan, mycan
+			else:
+				pass
+				#print 'Match:', name, mol.GetTitle(), insmi, incan, mycan
+
 	def make_mol(self):
 		sql = "Select molecule_id,created,charge,name From molecule"
 		molcursor = self.connection.cursor()
@@ -311,27 +340,7 @@ class umdb:
 				mol.SetDimension(0)
 			self.set_stereo(imol, mol)
 			#self.test_stereo(mol)
-
-			# is the constructed molecule the same as input?  need valid smiles property
-			# compare cansmiles for each
-			#self.cursor.execute("Select name,value From property Where molecule_id=? And name like '%smiles%'", [imol])
-			self.cursor.execute("Select name,value From property Where molecule_id=? And name = 'OpenBabel cansmiles'", [imol])
-			for row in self.cursor:
-				name =  str(row['name'])
-				insmi =  str(row['value'])
-				cansmi = OBConversion()
-				cansmi.SetOptions("-n", cansmi.OUTOPTIONS) # no name
-				cansmi.SetInFormat('smi')
-				cansmi.SetOutFormat('can')
-				tmpmol = OBMol()
-				cansmi.ReadString(tmpmol, insmi)
-				incan = cansmi.WriteString(tmpmol,1)
-				mycan = cansmi.WriteString(mol,1)
-				if mycan != incan:
-					print 'Mismatch:', name, mol.GetTitle(), insmi, incan, mycan
-				else:
-					pass
-					#print 'Match:', incan, mycan
+			self.mol_compare(imol, mol)
 		self.close()
 
 import sys

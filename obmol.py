@@ -42,11 +42,12 @@ while notatend:
   n += 1
   sys.stderr.write(str(n)+'\r')
   #print 'Dim:',obmol.GetDimension()
-  umdbout.insert_mol(obmol)
-  umdbout.insert_molproperty('File source', file)
+  cansmiles = None
   if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 150:
 	  cansmiles = obconversion.WriteString(obmol,1)
-	  umdbout.insert_molproperty('OpenBabel cansmiles', cansmiles)
+  umdbout.insert_mol(obmol)
+  umdbout.insert_molproperty('File source', file)
+  if cansmiles: umdbout.insert_molproperty('OpenBabel cansmiles', cansmiles)
   obmol = OBMol()
   notatend = obconversion.Read(obmol)
   #if n > 50:
