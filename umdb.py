@@ -61,7 +61,7 @@ class umdb:
 		sql = "Insert into molecule (created, name) Values (datetime('now'), ?)"
 		self.cursor.execute(sql, sqlargs)
 		self.molid = self.cursor.lastrowid
-		self.insert_molproperties(obmol)
+		#self.insert_molproperties(obmol)
 		self.insert_residues(obmol)
 		self.insert_atoms(obmol)
 		self.insert_atomproperties(obmol)
@@ -80,6 +80,12 @@ class umdb:
 		sqlargs = [self.molid, atom_number, name, value]
 		self.cursor.execute(sql, sqlargs)
 
+	def insert_bondproperty(self, atoma_number, atomb_number, name, value):
+		sql = "Insert into bond_property (molecule_id, from_atom, to_atom, name, value) Values (?,?,?,?,?)"
+		sqlargs = [self.molid, atoma_number, atomb_number, name, value]
+		self.cursor.execute(sql, sqlargs)
+
+
 	def close(self):
 		self.connection.commit()
 		self.connection.close()
@@ -89,13 +95,15 @@ class umdb:
 		#sql = "Insert into atom_property (molecule_id, atom_number, name, value) Values (?,?,?,?)"
 		for atom in OBMolAtomIter(obmol):
 		  for p in atom.GetAllData(0):
-			#if toPairData(p).GetDataType() == PairData:
 			 insert_atomproperty(atom.GetIdx(), p.GetAttribute(), p.GetValue())
-			 #sqlargs = [self.molid, atom.GetIdx(), p.GetAttribute(), p.GetValue()]
-			 #self.cursor.execute(sql, sqlargs)
+
+	def cansmiles_atom_order(self, obmol):
+		for p in obmol.GetData():
+			if p.GetDataType() == PairData:
+				if p.GetAttribute() == 'SMILES Atom Order':
+					return map(int, p.GetValue().split())
 
 	def insert_molproperties(self, obmol):
-		#sql = "Insert into property (molecule_id, name, value) Values (?,?,?)"
 		for p in obmol.GetData():
 			if p.GetDataType() == PairData:
 				if p.GetAttribute() == 'OpenBabel Symmetry Classes': continue
@@ -165,12 +173,10 @@ class umdb:
 			self.cursor.execute(sql, sqlargs)
 
 	def insert_bondproperties(self, obmol):
-		sql = "Insert into bond_property (molecule_id, from_atom, to_atom, name, value) Values (?,?,?,?,?)"
 		for bond in OBMolBondIter(obmol):
 			for p in bond.GetData():
 				if toPairData(p).GetDataType() == PairData:
-					sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), p.GetAttribute(), p.GetValue()]
-					self.cursor.execute(sql, sqlargs)
+					self.insert_bondproperty(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), p.GetAttribute(), p.GetValue())
 
 	def make_atoms(self, imol, mol):
 		#sql = "Select molecule_id, atom_number, z, symbol, name, a, spin, charge From atom Where molecule_id = ?"

@@ -1,55 +1,96 @@
 import sqlite3
 import sys
 import os
-from openbabel import *
+import openbabel as ob
 from umdb import umdb
+from nams import chirality
+from nams import doubleb_e_z
 
 # create a umdb from any molecular structure file that openbabel can read
 
-if len(sys.argv) < 2:
-  print 'usage: obmol.py input_file [output_database]'
-  exit()
-file = sys.argv[1]
-if not os.path.exists(file):
-  print 'usage: obmol.py input_file [output_database]'
-  exit()
-fhead, ftail = os.path.split(file)
-filename, fileext = os.path.splitext(ftail)
-fileext = fileext.replace('.','')
-obconversion = OBConversion()
+def getargs():
+  if len(sys.argv) < 2:
+    print 'usage: obmol.py input_file [output_database]'
+    exit()
+  fullfile = sys.argv[1]
+  if not os.path.exists(fullfile):
+    print 'usage: obmol.py input_file [output_database]'
+    exit()
+  fhead, ftail = os.path.split(fullfile)
+  filename, fileext = os.path.splitext(ftail)
+  fileext = fileext.replace('.','')
+
+
+  if len(sys.argv) > 2:
+    out = sys.argv[2]
+  else:
+    out = './' + filename + '.umdb'
+
+  if os.path.exists(out):
+    print out, 'file will not be over-written'
+    exit()
+
+  return (fullfile, fileext, out)
+
+(fullfile, fileext, out) = getargs()
+obconversion = ob.OBConversion()
 if obconversion.SetInFormat(fileext):
   pass
 else:
   print "can't process file type"
   exit()
-if len(sys.argv) > 2:
-  out = sys.argv[2]
-else:
-  out = './' + filename + '.umdb'
 
-if os.path.exists(out):
-  print out, 'file will not be over-written'
-  exit()
+def properties(umdbout, obmol):
+  # add some extra properties available from openbabel
+  obc = ob.OBConversion()
+  obc.SetOptions('-n', obconversion.OUTOPTIONS) # no name
 
-obmol = OBMol()
-notatend = obconversion.ReadFile(obmol, file)
-obconversion.SetOutFormat('can')
-obconversion.SetOptions('-n', obconversion.OUTOPTIONS) # no name
-n = 0
+  obconversion.SetOutFormat('can')
+  cansmiles = None
+  cansmiles = obconversion.WriteString(obmol,1)
+  if cansmiles: umdbout.insert_molproperty('OpenBabel cansmiles', cansmiles)
+
+  # waited to insert_molproperties so that canonical smiles order gets included
+  umdbout.insert_molproperties(obmol)
+  canorder = umdbout.cansmiles_atom_order(obmol)
+
+  obconversion.SetOutFormat('inchi')
+  inchi = None
+  inchi = obconversion.WriteString(obmol,1)
+  if inchi: umdbout.insert_molproperty('inchi', inchi)
+
+  chir = chirality.Chirality(cansmiles, 'smi')
+  # chir cansmiles atoms include H atoms, but canorder does not, so keep track of offset
+  nhatoms = 0
+  chioffset = []
+  for atom_id in range(chir.n_atoms):
+    chioffset.append(nhatoms)
+    if chir.obmol.GetAtom(atom_id+1).GetAtomicNum()==1 : nhatoms += 1
+    atom_chir = chir.get_chirality(atom_id)
+    #1 -> R; -1 -> S; 0 -> none.
+    if atom_chir:
+      #umdbout.insert_atomproperty(canorder[atom_id-nhatoms], 'chirality', 'R' if chir.get_chirality(atom_id) == 1 else 'S')
+      umdbout.insert_atomproperty(canorder[atom_id-chioffset[atom_id]], 'chirality', 'R' if chir.get_chirality(atom_id) == 1 else 'S')
+
+  stereo=doubleb_e_z.Stereodoubleb(cansmiles, 'smi')
+  for bond_id in range(stereo.n_bonds):
+    #1 -> Z; -1 -> E; 0 -> none. 
+    bond_stereo = stereo.get_e_z_bond(bond_id)
+    if bond_stereo:
+      bond = obmol.GetBondById(bond_id)
+      umdbout.insert_bondproperty(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), 'EZ-stereo', bond_stereo)
+
+obmol = ob.OBMol()
+notatend = obconversion.ReadFile(obmol, fullfile)
 umdbout = umdb(out)
 umdbout.create()
+n = 0
 while notatend:
   n += 1
   sys.stderr.write(str(n)+'\r')
-  #print 'Dim:',obmol.GetDimension()
-  cansmiles = None
-  if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 150:
-	  cansmiles = obconversion.WriteString(obmol,1)
   umdbout.insert_mol(obmol)
-  umdbout.insert_molproperty('File source', file)
-  if cansmiles: umdbout.insert_molproperty('OpenBabel cansmiles', cansmiles)
-  obmol = OBMol()
+  umdbout.insert_molproperty('File source', fullfile)
+  if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 150: properties(umdbout, obmol)
+  obmol = ob.OBMol()
   notatend = obconversion.Read(obmol)
-  #if n > 50:
-  #  break
 umdbout.close()
