@@ -80,9 +80,11 @@ class umdb:
 		sqlargs = [self.molid, atom_number, name, value]
 		self.cursor.execute(sql, sqlargs)
 
-	def insert_bondproperty(self, atoma_number, atomb_number, name, value):
+	def insert_bondproperty(self, atoma, atomb, name, value):
 		sql = "Insert into bond_property (molecule_id, from_atom, to_atom, name, value) Values (?,?,?,?,?)"
-		sqlargs = [self.molid, atoma_number, atomb_number, name, value]
+		bonds = [atoma, atomb]
+		bonds.sort()
+		sqlargs = [self.molid, bonds[0], bonds[1], name, value]
 		self.cursor.execute(sql, sqlargs)
 
 
@@ -169,7 +171,9 @@ class umdb:
 	def insert_bonds(self, obmol):
 		sql = "Insert into bond (molecule_id, from_atom, to_atom, bond_order) Values (?,?,?,?)"
 		for bond in OBMolBondIter(obmol):
-			sqlargs = [self.molid, bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), bond.GetBondOrder()]
+			bonds = [bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()]
+			bonds.sort()
+			sqlargs = [self.molid, bonds[0], bonds[1], bond.GetBondOrder()]
 			self.cursor.execute(sql, sqlargs)
 
 	def insert_bondproperties(self, obmol):

@@ -70,7 +70,7 @@ def properties(umdbout, obmol):
     #1 -> R; -1 -> S; 0 -> none.
     if atom_chir:
       #umdbout.insert_atomproperty(canorder[atom_id-nhatoms], 'chirality', 'R' if chir.get_chirality(atom_id) == 1 else 'S')
-      umdbout.insert_atomproperty(canorder[atom_id-chioffset[atom_id]], 'chirality', 'R' if chir.get_chirality(atom_id) == 1 else 'S')
+      umdbout.insert_atomproperty(canorder[atom_id-chioffset[atom_id]], 'NAMS chirality', 'R' if chir.get_chirality(atom_id) == 1 else 'S')
 
   stereo=doubleb_e_z.Stereodoubleb(cansmiles, 'smi')
   for bond_id in range(stereo.n_bonds):
@@ -78,7 +78,9 @@ def properties(umdbout, obmol):
     bond_stereo = stereo.get_e_z_bond(bond_id)
     if bond_stereo:
       bond = obmol.GetBondById(bond_id)
-      umdbout.insert_bondproperty(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), 'EZ-stereo', bond_stereo)
+      fromatom = bond.GetBeginAtomIdx()
+      toatom = bond.GetEndAtomIdx()
+      umdbout.insert_bondproperty(canorder[fromatom-chioffset[fromatom]], canorder[toatom-chioffset[toatom]], 'NAMS EZ-stereo', 'Z' if bond_stereo == 1 else 'E')
 
 obmol = ob.OBMol()
 notatend = obconversion.ReadFile(obmol, fullfile)
