@@ -76,11 +76,17 @@ def properties(umdbout, obmol):
   for bond_id in range(stereo.n_bonds):
     #1 -> Z; -1 -> E; 0 -> none. 
     bond_stereo = stereo.get_e_z_bond(bond_id)
+    #bond = chir.obmol.GetBond(bond_id)
+    #fromatom = bond.GetBeginAtomIdx()
+    #toatom = bond.GetEndAtomIdx()
+    #if bond_stereo: print bond_id, fromatom, toatom, bond.GetBondOrder(), bond_stereo
     if bond_stereo:
-      bond = obmol.GetBondById(bond_id)
-      fromatom = bond.GetBeginAtomIdx()
-      toatom = bond.GetEndAtomIdx()
+      bond = chir.obmol.GetBond(bond_id)
+      fromatom = bond.GetBeginAtomIdx()-1
+      toatom = bond.GetEndAtomIdx()-1
+      #print bond_id, fromatom, toatom, canorder[fromatom-chioffset[fromatom]], canorder[toatom-chioffset[toatom]], bond.GetBondOrder()
       umdbout.insert_bondproperty(canorder[fromatom-chioffset[fromatom]], canorder[toatom-chioffset[toatom]], 'NAMS EZ-stereo', 'Z' if bond_stereo == 1 else 'E')
+# end of properties()
 
 obmol = ob.OBMol()
 notatend = obconversion.ReadFile(obmol, fullfile)
