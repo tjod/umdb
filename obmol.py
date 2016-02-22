@@ -3,16 +3,29 @@ import sys
 import os
 import openbabel as ob
 from umdb import umdb
-from nams import chirality
-from nams import doubleb_e_z
+import getopt
 
 # create a umdb from any molecular structure file that openbabel can read
 
 def getargs():
-  if len(sys.argv) < 2:
-    print 'usage: obmol.py input_file [output_database]'
+
+  addprop = False
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "hp")
+  except getopt.GetoptError as err:
+    print err
     exit()
-  fullfile = sys.argv[1]
+
+  for opt,val in opts:
+    if opt == "-h":
+      print 'usage: obmol.py [-p][-h] input_file [output_database]'
+      print '       -h this help'
+      print '       -p include cansmiles, inchi, E/Z bond into, R/S atom info'
+      exit()
+    if opt == "-p":
+      addprop = True
+
+  fullfile = args[0]
   if not os.path.exists(fullfile):
     print 'usage: obmol.py input_file [output_database]'
     exit()
@@ -20,9 +33,8 @@ def getargs():
   filename, fileext = os.path.splitext(ftail)
   fileext = fileext.replace('.','')
 
-
-  if len(sys.argv) > 2:
-    out = sys.argv[2]
+  if len(args) > 1:
+    out = args[1]
   else:
     out = './' + filename + '.umdb'
 
@@ -30,9 +42,9 @@ def getargs():
     print out, 'file will not be over-written'
     exit()
 
-  return (fullfile, fileext, out)
+  return (fullfile, fileext, out, addprop)
 
-(fullfile, fileext, out) = getargs()
+(fullfile, fileext, out, addprop) = getargs()
 obconversion = ob.OBConversion()
 if obconversion.SetInFormat(fileext):
   pass
@@ -41,6 +53,8 @@ else:
   exit()
 
 def properties(umdbout, obmol):
+  from nams import chirality
+  from nams import doubleb_e_z
   # add some extra properties available from openbabel
   obc = ob.OBConversion()
   obc.SetOptions('-n', obconversion.OUTOPTIONS) # no name
@@ -98,7 +112,7 @@ while notatend:
   sys.stderr.write(str(n)+'\r')
   umdbout.insert_mol(obmol)
   umdbout.insert_molproperty('File source', fullfile)
-  if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 150: properties(umdbout, obmol)
+  if addprop and obmol.NumAtoms() > 0 and obmol.NumAtoms() < 150: properties(umdbout, obmol)
   obmol = ob.OBMol()
   notatend = obconversion.Read(obmol)
 umdbout.close()

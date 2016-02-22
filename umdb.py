@@ -65,10 +65,10 @@ class umdb:
 		self.insert_residues(obmol)
 		self.insert_atoms(obmol)
 		self.insert_atomproperties(obmol)
-		self.connection.commit()
 		if bonds:
 			self.insert_bonds(obmol)
 			self.insert_bondproperties(obmol)
+		self.connection.commit()
 
 	def insert_molproperty(self, name, value):
 		sql = "Insert Into property (molecule_id, name, value) Values (?,?,?)"
