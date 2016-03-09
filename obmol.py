@@ -112,7 +112,11 @@ while notatend:
   sys.stderr.write(str(n)+'\r')
   umdbout.insert_mol(obmol)
   umdbout.insert_molproperty('File source', fullfile)
-  if addprop and obmol.NumAtoms() > 0 and obmol.NumAtoms() < 150: properties(umdbout, obmol)
+  if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 200:
+    if addprop:
+      properties(umdbout, obmol)
+    else:
+      umdbout.insert_molproperties(obmol)
   obmol = ob.OBMol()
   notatend = obconversion.Read(obmol)
 umdbout.close()

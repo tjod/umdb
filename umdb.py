@@ -13,6 +13,7 @@ class umdb:
 			self.connection.row_factory = sqlite3.Row
 			self.cursor = self.connection.cursor()
 			self.cursor.execute('Pragma foreign_keys=ON')
+			self.cursor.execute('Pragma defer_foreign_keys=ON')
 			#self.cursor.execute('Pragma synchronous=OFF')
 			self.cursor.execute('Begin')
 			print 'Begin'
