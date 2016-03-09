@@ -102,21 +102,25 @@ def properties(umdbout, obmol):
       umdbout.insert_bondproperty(canorder[fromatom-chioffset[fromatom]], canorder[toatom-chioffset[toatom]], 'NAMS EZ-stereo', 'Z' if bond_stereo == 1 else 'E')
 # end of properties()
 
-obmol = ob.OBMol()
-notatend = obconversion.ReadFile(obmol, fullfile)
-umdbout = umdb(out)
-umdbout.create()
-n = 0
-while notatend:
-  n += 1
-  sys.stderr.write(str(n)+'\r')
-  umdbout.insert_mol(obmol)
-  umdbout.insert_molproperty('File source', fullfile)
-  if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 200:
-    if addprop:
-      properties(umdbout, obmol)
-    else:
-      umdbout.insert_molproperties(obmol)
+def main():
   obmol = ob.OBMol()
-  notatend = obconversion.Read(obmol)
-umdbout.close()
+  notatend = obconversion.ReadFile(obmol, fullfile)
+  umdbout = umdb(out)
+  umdbout.create()
+  n = 0
+  while notatend:
+    n += 1
+    sys.stderr.write(str(n)+'\r')
+    umdbout.insert_mol(obmol)
+    umdbout.insert_molproperty('File source', fullfile)
+    if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 200:
+      if addprop:
+        properties(umdbout, obmol)
+      else:
+        umdbout.insert_molproperties(obmol)
+    obmol = ob.OBMol()
+    notatend = obconversion.Read(obmol)
+  umdbout.close()
+
+if __name__ == "__main__":
+  main()

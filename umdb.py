@@ -8,6 +8,7 @@ class umdb:
 		# workaround
 		OBStereo.NoRef = 4294967295
 		OBStereo.ImplicitRef = 4294967294
+		self.ElementTable = OBElementTable()
 		if out:
 			self.connection = sqlite3.connect(out)
 			self.connection.row_factory = sqlite3.Row
@@ -145,7 +146,7 @@ class umdb:
 				isotope = None #isotope = int(OBIsotopeTable().GetExactMass (atom.GetAtomicNum()))
 			if spin == 0:
 				spin = None
-			sqlargs = [self.molid, atom.GetIdx(), atom.GetAtomicNum(), OBElementTable().GetSymbol(atom.GetAtomicNum()), name, isotope, spin, charge]
+			sqlargs = [self.molid, atom.GetIdx(), atom.GetAtomicNum(), self.ElementTable.GetSymbol(atom.GetAtomicNum()), name, isotope, spin, charge]
 			self.cursor.execute(atomsql, sqlargs)
 			# store atom coords
 			if obmol.GetDimension() > 0:
