@@ -109,8 +109,6 @@ def main():
     print "can't process file type"
     exit()
 
-  print addprop, addcharges, addtypes
-
   obmol = ob.OBMol()
   notatend = obconversion.ReadFile(obmol, fullfile)
   umdbout = umdb(out)
