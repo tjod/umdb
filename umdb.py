@@ -63,6 +63,7 @@ class umdb:
 		sql = "Insert into molecule (created, name) Values (datetime('now'), ?)"
 		self.cursor.execute(sql, sqlargs)
 		self.molid = self.cursor.lastrowid
+		# option in main now
 		#self.insert_molproperties(obmol)
 		self.insert_residues(obmol)
 		self.insert_atoms(obmol)
@@ -98,8 +99,20 @@ class umdb:
 	def insert_atomproperties(self, obmol):
 		#sql = "Insert into atom_property (molecule_id, atom_number, name, value) Values (?,?,?,?)"
 		for atom in OBMolAtomIter(obmol):
-		  for p in atom.GetAllData(0):
-			 insert_atomproperty(atom.GetIdx(), p.GetAttribute(), p.GetValue())
+			 for p in atom.GetAllData(0):
+			 	insert_atomproperty(atom.GetIdx(), p.GetAttribute(), p.GetValue())
+
+	def insert_atomtypes(self, obmol):
+		for atom in OBMolAtomIter(obmol):
+			atype = atom.GetType()
+			if atype:
+				self.insert_atomproperty(atom.GetIdx(), 'OBType', atype)
+
+	def insert_atomcharges(self, obmol):
+		for atom in OBMolAtomIter(obmol):
+			partial = atom.GetPartialCharge()
+			if partial:
+				self.insert_atomproperty(atom.GetIdx(), 'GasteigerPartialCharge', partial)
 
 	def cansmiles_atom_order(self, obmol):
 		for p in obmol.GetData():
@@ -158,12 +171,6 @@ class umdb:
 				atom_name = res.GetAtomID(atom)
 				sqlargs = [self.molid,  res.GetNum(), res.GetChain(), atom.GetIdx(), atom_name]
 				self.cursor.execute(ressql, sqlargs)
-			atype = atom.GetType()
-			if atype:
-				self.insert_atomproperty(atom.GetIdx(), 'OBType', atype)
-			partial = atom.GetPartialCharge()
-			#if partial:
-				#self.insert_atomproperty(atom.GetIdx(), 'PartialCharge', partial)
 
 			# goes into molecule property now
 			#if facade.HasTetrahedralStereo(atom.GetId()):

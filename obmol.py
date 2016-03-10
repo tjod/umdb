@@ -10,8 +10,10 @@ import getopt
 def getargs():
 
   addprop = False
+  addcharges = False
+  addtypes = False
   try:
-    opts, args = getopt.getopt(sys.argv[1:], "hp")
+    opts, args = getopt.getopt(sys.argv[1:], "hptc")
   except getopt.GetoptError as err:
     print err
     exit()
@@ -21,9 +23,12 @@ def getargs():
       print 'usage: obmol.py [-p][-h] input_file [output_database]'
       print '       -h this help'
       print '       -p include cansmiles, inchi, E/Z bond into, R/S atom info'
+      print '       -t include atom types in atom properties'
+      print '       -c include Gasteiger partial charges in atom properties'
       exit()
-    if opt == "-p":
-      addprop = True
+    if opt == "-p": addprop = True
+    if opt == "-t": addtypes = True
+    if opt == "-c": addcharges = True
 
   fullfile = args[0]
   if not os.path.exists(fullfile):
@@ -42,36 +47,28 @@ def getargs():
     print out, 'file will not be over-written'
     exit()
 
-  return (fullfile, fileext, out, addprop)
-
-(fullfile, fileext, out, addprop) = getargs()
-obconversion = ob.OBConversion()
-if obconversion.SetInFormat(fileext):
-  pass
-else:
-  print "can't process file type"
-  exit()
+  return (fullfile, fileext, out, addprop, addcharges, addtypes)
 
 def properties(umdbout, obmol):
   from nams import chirality
   from nams import doubleb_e_z
   # add some extra properties available from openbabel
   obc = ob.OBConversion()
-  obc.SetOptions('-n', obconversion.OUTOPTIONS) # no name
+  obc.SetOptions('-n', obc.OUTOPTIONS) # no name
 
-  obconversion.SetOutFormat('can')
+  obc.SetOutFormat('can')
   cansmiles = None
-  cansmiles = obconversion.WriteString(obmol,1)
+  cansmiles = obc.WriteString(obmol,1)
   if cansmiles: umdbout.insert_molproperty('OpenBabel cansmiles', cansmiles)
 
   # waited to insert_molproperties so that canonical smiles order gets included
   umdbout.insert_molproperties(obmol)
   canorder = umdbout.cansmiles_atom_order(obmol)
 
-  obconversion.SetOutFormat('inchi')
+  obc.SetOutFormat('inchi')
   inchi = None
-  inchi = obconversion.WriteString(obmol,1)
-  if inchi: umdbout.insert_molproperty('inchi', inchi)
+  inchi = obc.WriteString(obmol,1)
+  if inchi: umdbout.insert_molproperty('InChI', inchi)
 
   chir = chirality.Chirality(cansmiles, 'smi')
   # chir cansmiles atoms include H atoms, but canorder does not, so keep track of offset
@@ -103,6 +100,17 @@ def properties(umdbout, obmol):
 # end of properties()
 
 def main():
+
+  (fullfile, fileext, out, addprop, addcharges, addtypes) = getargs()
+  obconversion = ob.OBConversion()
+  if obconversion.SetInFormat(fileext):
+    pass
+  else:
+    print "can't process file type"
+    exit()
+
+  print addprop, addcharges, addtypes
+
   obmol = ob.OBMol()
   notatend = obconversion.ReadFile(obmol, fullfile)
   umdbout = umdb(out)
@@ -113,11 +121,13 @@ def main():
     sys.stderr.write(str(n)+'\r')
     umdbout.insert_mol(obmol)
     umdbout.insert_molproperty('File source', fullfile)
-    if obmol.NumAtoms() > 0 and obmol.NumAtoms() < 200:
-      if addprop:
-        properties(umdbout, obmol)
-      else:
-        umdbout.insert_molproperties(obmol)
+    if obmol.NumAtoms() > 0:
+      if addcharges: umdbout.insert_atomcharges(obmol)
+      if addtypes: umdbout.insert_atomtypes(obmol)
+    if addprop:
+      properties(umdbout, obmol)
+    else:
+      umdbout.insert_molproperties(obmol)
     obmol = ob.OBMol()
     notatend = obconversion.Read(obmol)
   umdbout.close()
