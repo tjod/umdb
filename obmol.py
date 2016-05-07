@@ -2,7 +2,7 @@ import sqlite3
 import sys
 import os
 import openbabel as ob
-from umdb import umdb
+from umdb_openbabel import umdb_openbabel as db
 import getopt
 
 # create a umdb from any molecular structure file that openbabel can read
@@ -111,7 +111,7 @@ def main():
 
   obmol = ob.OBMol()
   notatend = obconversion.ReadFile(obmol, fullfile)
-  umdbout = umdb(out)
+  umdbout = db(out)
   umdbout.create()
   n = 0
   while notatend:
