@@ -1,4 +1,4 @@
-CREATE TABLE molecule (
+CREATE TABLE If Not Exists molecule (
                 molecule_id INTEGER PRIMARY KEY,
 		charge INTEGER,
 		multiplicity INTEGER,
@@ -7,17 +7,17 @@ CREATE TABLE molecule (
 );
 
 
-CREATE TABLE property (
+CREATE TABLE If Not Exists property (
                 molecule_id INTEGER NOT NULL,
 		ns TEXT,
                 name TEXT NOT NULL,
                 value TEXT NOT NULL,
 		FOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE INDEX property_idx ON property (molecule_id);
+CREATE INDEX If Not Exists property_idx ON property (molecule_id);
 
 
-CREATE TABLE atom (
+CREATE TABLE If Not Exists atom (
                 molecule_id INTEGER NOT NULL,
                 atom_number INTEGER NOT NULL,
                 symbol TEXT,
@@ -31,7 +31,7 @@ CREATE TABLE atom (
 );
 
 
-CREATE TABLE bond (
+CREATE TABLE If Not Exists bond (
                 molecule_id INTEGER NOT NULL,
                 from_atom INTEGER NOT NULL,
                 to_atom INTEGER NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE bond (
 );
 
 
-CREATE TABLE atom_property (
+CREATE TABLE If Not Exists atom_property (
                 molecule_id INTEGER NOT NULL,
                 atom_number INTEGER NOT NULL,
 		ns TEXT,
@@ -51,9 +51,9 @@ CREATE TABLE atom_property (
                 value TEXT NOT NULL,
 		FOREIGN KEY (molecule_id, atom_number) REFERENCES atom (molecule_id, atom_number) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE INDEX atom_property_idx ON atom_property (molecule_id, atom_number);
+CREATE INDEX If Not Exists atom_property_idx ON atom_property (molecule_id, atom_number);
 
-CREATE TABLE bond_property (
+CREATE TABLE If Not Exists bond_property (
                 molecule_id INTEGER NOT NULL,
                 from_atom INTEGER NOT NULL,
                 to_atom INTEGER NOT NULL,
@@ -62,10 +62,10 @@ CREATE TABLE bond_property (
                 value TEXT NOT NULL,
 		FOREIGN KEY (molecule_id, from_atom, to_atom) REFERENCES bond (molecule_id, from_atom, to_atom) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE INDEX bond_property_idx ON bond_property (molecule_id, from_atom, to_atom);
+CREATE INDEX If Not Exists bond_property_idx ON bond_property (molecule_id, from_atom, to_atom);
 
 
-CREATE TABLE coord (
+CREATE TABLE If Not Exists coord (
                 molecule_id INTEGER NOT NULL,
                 atom_number INTEGER NOT NULL,
                 set_number INTEGER,
@@ -77,7 +77,7 @@ CREATE TABLE coord (
 );
 
 
-CREATE TABLE internal_coord (
+CREATE TABLE If Not Exists internal_coord (
                 molecule_id INTEGER NOT NULL,
 		atom_number INTEGER NOT NULL,
                 distance_atom INTEGER,
@@ -93,7 +93,7 @@ CREATE TABLE internal_coord (
 		FOREIGN KEY (torsion_atom, molecule_id) REFERENCES atom (atom_number, molecule_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE residue (
+CREATE TABLE If Not Exists residue (
                 molecule_id INTEGER NOT NULL,
 		chain TEXT,
 		number INTEGER,
@@ -102,7 +102,7 @@ CREATE TABLE residue (
 		FOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE residue_atom (
+CREATE TABLE If Not Exists residue_atom (
                 molecule_id INTEGER NOT NULL,
 		atom_number INTEGER NOT NULL,
 		chain TEXT NOT NULL,

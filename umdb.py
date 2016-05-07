@@ -94,6 +94,20 @@ class umdb:
                 sqlargs = [self.molid, resnum, chain, idx, name]
                 self.cursor.execute(ressql, sqlargs)
 
+	def symbol_to_z(self):
+		"""utility to populate atom z (atomic number) from symbol column"""
+		sql = "attach 'element.sqlite' as e"
+		self.cursor.execute(sql)
+		sql = "update atom set z=(select z from e.element where atom.symbol=element.symbol)"
+		self.cursor.execute(sql)
+
+	def z_to_symbol(self):
+		"""utility to populate symbol column from atom z (atomic number)"""
+		sql = "attach 'element.sqlite' as e"
+		self.cursor.execute(sql)
+		sql = "update atom set symbol=(select symbol from e.element where atom.z=element.z)"
+		self.cursor.execute(sql)
+
 import sys
 if __name__ == '__main__':
 
