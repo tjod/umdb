@@ -35,8 +35,9 @@ CREATE TABLE If Not Exists bond (
                 molecule_id INTEGER NOT NULL,
                 from_atom INTEGER NOT NULL,
                 to_atom INTEGER NOT NULL,
+		name TEXT,
                 bond_order FLOAT,
-                bond_type TEXT,
+                --bond_type TEXT,
                 CONSTRAINT bond_pkey PRIMARY KEY (molecule_id, from_atom, to_atom)
 		FOREIGN KEY (molecule_id, from_atom) REFERENCES atom (molecule_id, atom_number) ON DELETE CASCADE ON UPDATE CASCADE
 		FOREIGN KEY (molecule_id, to_atom) REFERENCES atom (molecule_id, atom_number) ON DELETE CASCADE ON UPDATE CASCADE

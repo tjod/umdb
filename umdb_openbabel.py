@@ -366,17 +366,17 @@ class umdb_openbabel:
 		for row in molcursor:
 			if row['molecule_id']:
 				imol = int(row['molecule_id'])
-				sys.stderr.write(str(imol)+'\r')
 			else:
 				print 'molecule id error'
 				exit(0)
 			mol = self.make_mol(imol, row=row)
 			#self.test_stereo(mol)
 			if (compare):
+				sys.stderr.write(str(imol)+'\r')
 				self.mol_compare(imol, mol)
 			else:
 			        cansmiles = obc.WriteString(mol,1)
-			        print cansmiles
+			        print imol,":",cansmiles
 
 import sys
 if __name__ == '__main__':

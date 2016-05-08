@@ -14,7 +14,7 @@ class umdb:
 			self.cursor.execute('Pragma defer_foreign_keys=ON')
 			#self.cursor.execute('Pragma synchronous=OFF')
 			self.cursor.execute('Begin')
-			print 'Begin'
+			#print 'Begin'
 
 	def create(self):
 		"""create the umdb file from sql Create Table statements"""
@@ -29,7 +29,7 @@ class umdb:
 		"""commit current changes and close databases"""
 		self.connection.commit()
 		self.connection.close()
-		print 'End'
+		#print 'End'
 
 	def insert_molecule(self, name, charge=None, multiplicity=None):
 		"""insert a new molecule into database"""
@@ -71,15 +71,15 @@ class umdb:
 		sqlargs = [self.molid, idx, x, y, z]
 		self.cursor.execute(coordsql, sqlargs)
 
-	def insert_bond(self, from_atom, to_atom, bond_order, bond_type=None, ordered=False):
+	def insert_bond(self, from_atom, to_atom, bond_order, name=None, ordered=False):
 		"""insert a bond into the database"""
-		sql = "Insert Or Ignore Into bond (molecule_id, from_atom, to_atom, bond_order, bond_type) Values (?,?,?,?,?)"
+		sql = "Insert Or Ignore Into bond (molecule_id, from_atom, to_atom, bond_order, name) Values (?,?,?,?,?)"
 		if ordered:
-			sqlargs = [self.molid, from_atom, to_atom, bond_order, bond_type]
+			sqlargs = [self.molid, from_atom, to_atom, bond_order, name]
 		else:
 			bonds = [from_atom, to_atom]
 			bonds.sort()
-			sqlargs = [self.molid, bonds[0], bonds[1], bond_order, bond_type]
+			sqlargs = [self.molid, bonds[0], bonds[1], bond_order, name]
 		self.cursor.execute(sql, sqlargs)
 
 	def insert_residue(self, name, resnum, chain):
