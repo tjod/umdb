@@ -5,7 +5,7 @@ class umdb:
 	"""create umdb file and insert molecule, atoms, bonds, properties"""
 	def __init__(self, out):
 		"""out is database file name"""
-		self.molid = 0
+		self.molid = None
 		if out:
 			self.connection = sqlite3.connect(out)
 			self.connection.row_factory = sqlite3.Row
@@ -107,6 +107,11 @@ class umdb:
 		self.cursor.execute(sql)
 		sql = "update atom set symbol=(select symbol from e.element where atom.z=element.z)"
 		self.cursor.execute(sql)
+
+	def insert_graph_context(self, prefix, suffix):
+		sql = "Insert Into graph_context (molecule_id, prefix, suffix) Values (?,?,?)"
+		sqlargs = [self.molid, prefix, suffix]
+		self.cursor.execute(sql, sqlargs)
 
 import sys
 if __name__ == '__main__':
