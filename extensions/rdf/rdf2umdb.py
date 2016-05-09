@@ -41,14 +41,13 @@ def main():
   gc = Namespace("http://purl.org/gc/")
   dc = Namespace("http://purl.org/dc/terms/")
   pub = g.value(predicate=RDF.type, object=gc.ComputationalChemistryPublication)
+  if pub is None:
+	  print "No gc.ComputationalChemistryPublication found"
+	  exit()
   pubParts = urlparse(pub)
   #TODO better way to get base
   base = urlunparse( (pubParts.scheme, pubParts.netloc, '/', '', '', '') )
-  print base
   id = g.value(pub, dc.identifier)
-  if id is None:
-	  print "No gc.ComputationalChemistryPublication found"
-	  exit()
 
   # create database
   if udb is None: udb = id
