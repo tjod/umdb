@@ -353,13 +353,13 @@ class umdb_openbabel:
 		self.set_stereo(imol, mol)
 		return mol
 
-	def compare_mols(self, compare=False):
+	def compare_mols(self, compare=False, format='can', line_numbers=True, molnames=True):
 		"""compare cansmiles of OBMol() constructed from database mols with openbabel cansmiles stored as property.
 		   This only makes sense when there is a name='OpenBabel cansmiles' in the property table.
 		"""
 	        obc = ob.OBConversion()
-	        obc.SetOutFormat('can')
-	        #obc.SetOptions("-n", obc.OUTOPTIONS) # no name
+	        obc.SetOutFormat(format)
+	        obc.SetOptions("-n", obc.OUTOPTIONS) # no name
 		sql = "Select molecule_id,created,charge,name From molecule"
 		molcursor = self.db.connection.cursor()
 		molcursor.execute(sql)
@@ -375,8 +375,11 @@ class umdb_openbabel:
 				sys.stderr.write(str(imol)+'\r')
 				self.mol_compare(imol, mol)
 			else:
-			        cansmiles = obc.WriteString(mol,1)
-			        print imol,":",cansmiles
+			        out = obc.WriteString(mol,1)
+				if line_numbers: print imol,":",
+				print out,
+				if molnames: print mol.GetTitle(),
+				print
 
 import sys
 if __name__ == '__main__':
