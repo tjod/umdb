@@ -88,11 +88,11 @@ class umdb:
 		sqlargs = [self.molid, name, resnum, chain]
 		self.cursor.execute(ressql, sqlargs)
 
-        def insert_residue_atom(self, resnum, chain, idx, name):
+	def insert_residue_atom(self, resnum, chain, idx, name):
 		"""insert an atom of a residue into the database"""
-                ressql = "Insert into residue_atom (molecule_id, number, chain, atom_number, name) Values (?,?,?,?,?)"
-                sqlargs = [self.molid, resnum, chain, idx, name]
-                self.cursor.execute(ressql, sqlargs)
+		ressql = "Insert into residue_atom (molecule_id, number, chain, atom_number, name) Values (?,?,?,?,?)"
+		sqlargs = [self.molid, resnum, chain, idx, name]
+		self.cursor.execute(ressql, sqlargs)
 
 	def symbol_to_z(self):
 		"""utility to populate atom z (atomic number) from symbol column"""

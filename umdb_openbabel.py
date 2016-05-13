@@ -1,4 +1,4 @@
-import sqlite3
+#import sqlite3
 import openbabel as ob
 import json
 from umdb import umdb
@@ -90,8 +90,8 @@ class umdb_openbabel:
 	def insert_atomproperties(self, obmol):
 		"""loop over openbabel atoms' properties and insert each"""
 		for atom in ob.OBMolAtomIter(obmol):
-			 for p in atom.GetAllData(0):
-			 	self.db.insert_atomproperty(atom.GetIdx(), p.GetAttribute(), p.GetValue())
+			for p in atom.GetAllData(0):
+				self.db.insert_atomproperty(atom.GetIdx(), p.GetAttribute(), p.GetValue())
 
 	def insert_atomtypes(self, obmol):
 		"""loop over openbabel atoms' types and insert each"""
@@ -191,15 +191,15 @@ class umdb_openbabel:
 				atomid = int(row['atom_number'])
 				atom = ob.OBAtom()
 				atom.SetId(atomid)
-				if row['atomic_number']:
+				if row['atomic_number'] is not None:
 					atom.SetAtomicNum(int(row['atomic_number']))
-				if row['a']:
+				if row['a'] is not None:
 					atom.SetIsotope(int(row['a']))
-				if row['charge']:
+				if row['charge'] is not None:
 					atom.SetFormalCharge(int(row['charge']))
-				if row['spin']:
+				if row['spin'] is not None:
 					atom.SetSpinMultiplicity(int(row['spin']))
-				if row['x'] and row['y'] and row['z']:
+				if row['x']  is not None and row['y'] is not None and row['z'] is not None:
 					atom.SetVector(float(row['x']), float(row['y']), float(row['z']))
 				mol.AddAtom(atom)
 
@@ -300,7 +300,7 @@ class umdb_openbabel:
 		#self.cursor.execute("Select name,value From property Where molecule_id=? And name like '%smiles%'", [imol])
 		self.db.cursor.execute("Select name,value From property Where molecule_id=? And name = 'OpenBabel cansmiles'", [imol])
 		for row in self.db.cursor:
-			name =  str(row['name'])
+			#name =  str(row['name'])
 			insmi =  str(row['value'])
 			obc = ob.OBConversion()
 			obc.SetInFormat('smi')
@@ -353,13 +353,13 @@ class umdb_openbabel:
 		self.set_stereo(imol, mol)
 		return mol
 
-	def compare_mols(self, compare=False, format='can', line_numbers=True, molnames=True):
+	def compare_mols(self, compare=False, fmt='can', line_numbers=True, molnames=True):
 		"""compare cansmiles of OBMol() constructed from database mols with openbabel cansmiles stored as property.
 		   This only makes sense when there is a name='OpenBabel cansmiles' in the property table.
 		"""
-	        obc = ob.OBConversion()
-	        obc.SetOutFormat(format)
-	        obc.SetOptions("-n", obc.OUTOPTIONS) # no name
+		obc = ob.OBConversion()
+		obc.SetOutFormat(fmt)
+		obc.SetOptions("-n", obc.OUTOPTIONS) # no name
 		sql = "Select molecule_id,created,charge,name From molecule"
 		molcursor = self.db.connection.cursor()
 		molcursor.execute(sql)
@@ -375,7 +375,7 @@ class umdb_openbabel:
 				sys.stderr.write(str(imol)+'\r')
 				self.mol_compare(imol, mol)
 			else:
-			        out = obc.WriteString(mol,1)
+				out = obc.WriteString(mol,1)
 				if line_numbers: print imol,":",
 				print out,
 				if molnames: print mol.GetTitle(),

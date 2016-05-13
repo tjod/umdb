@@ -1,5 +1,5 @@
 import openbabel as ob
-import sqlite3
+#import sqlite3
 from umdb_openbabel import umdb_openbabel as umdb
 import sys
 
@@ -46,5 +46,5 @@ if db != None:
 		out = obc.WriteString(mol,1)
 		print out
 	else:
-		u.compare_mols(compare, format=ofmt, line_numbers=line_numbers, molnames=molnames)
+		u.compare_mols(compare, fmt=ofmt, line_numbers=line_numbers, molnames=molnames)
 	u.close()
