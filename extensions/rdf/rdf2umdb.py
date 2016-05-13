@@ -1,9 +1,8 @@
 import sys
 from umdb import umdb
-from rdflib import Graph, RDF, URIRef, Namespace, term
+from rdflib import Graph, RDF, Namespace, term, util
 from urlparse import urlparse, urlunparse
 import urllib2
-import sqlite3
 
 def counts(g):
     print "Types:"
@@ -28,12 +27,13 @@ def counts(g):
     for (p,count) in uniq_props.iteritems():
         print p,count
 
-def get_graph(input):
-
+def get_graph(source, fmt):
     g  =  Graph()
-    if input:
+    if source:
+        if fmt is None:
+            fmt = util.guess_format(source)
         try:
-            g.parse(input)
+            g.parse(source, format=fmt)
         except urllib2.HTTPError as e:
             print "HTTP Error({0}): {1}".format(e.code, e.reason)
         except urllib2.URLError as e:
@@ -46,55 +46,98 @@ def get_graph(input):
 
     return g
 
-def make_umdb(g, odb):
-    # define these two to ensure no errors in code here
-    gc = Namespace("http://purl.org/gc/")
-    dc = Namespace("http://purl.org/dc/terms/")
-    pub = g.value(predicate=RDF.type, object=gc.ComputationalChemistryPublication)
-    if pub is None:
-        print "No gc.ComputationalChemistryPublication found"
-        exit()
-    pubParts = urlparse(pub)
-    #TODO better way to get base
-    base = urlunparse( (pubParts.scheme, pubParts.netloc, '/', '', '', '') )
-    id = g.value(pub, dc.identifier)
+def parseURI(g, uri):
+    suffix = None
+    prefix = None
+    for (ns,base) in g.namespaces():
+        if uri.startswith(base):
+            prefix = ns
+            suffix = uri.replace(base,'')
+            break
+    return (prefix, suffix)
 
-    # create database
-    if odb is None:
-        udb = id
+def shorten(g, x):
+    """try to turn URIRef into namsepace: style"""
+    if type(x) == term.URIRef:
+        (prefix,suffix) = parseURI(g, x)
+        #if prefix is not None and prefix != 'base': x = prefix+':'+suffix
+        if prefix is not None: x = prefix+':'+suffix
     else:
-        udb = odb
-    u = umdb(udb)
-    u.create()
+        if x.startswith('http:'): print x, type(x)
+    return x
 
-    system=g.value(predicate=RDF.type, object=gc.MolecularSystem)
-    charge = g.value(g.value(system, gc.hasSystemCharge), gc.hasNumber).value
-    multiplicity = g.value(g.value(system, gc.hasSystemMultiplicity), gc.hasNumber).value
-
-    # maps bond order strings to integers, using values appropriate for openBabel; oddball is Aromatic=5
-    # when bonds are stored as value strings
-    bondOrderValues = ["Single", "Double", "Triple", "Dummy", "Aromatic"]
-    # when bonds are stored as uri refs
-    bondOrderTypes  = [gc.Single, gc.Double, gc.Triple, "Dummy", gc.Aromatic]
-
-    # TODO: how to deal with individual molecules' charge, multiplicity
-    # loop over all mols in this system
-    for mol in g.subjects(RDF.type, gc.Molecule):
-        u.insert_molecule(mol, multiplicity=multiplicity, charge=charge)
-        u.insert_graph_context("base", base)
-
-    # trick way to create namespaces from graph for use within this script
+class UMDB:
+    def __init__(self, graph):
+        self.g = graph
+        self.dbname = None
+        self.mol = None
+        self.u = None
+        self.gc = Namespace("http://purl.org/gc/")
+        self.dc = Namespace("http://purl.org/dc/terms/")
+        # maps bond order strings to integers, using values appropriate for openBabel; oddball is Aromatic=5
+        #  when bonds are stored as value strings
+        self.bondOrderValues = ["Single", "Double", "Triple", "Dummy", "Aromatic"]
+        # when bonds are stored as uri refs
+        self.bondOrderTypes  = [self.gc.Single, self.gc.Double, self.gc.Triple, "Dummy", self.gc.Aromatic]
+        
+    def make(self, g, odb):
+        # define these two to ensure no errors in code here
+        gc = self.gc
+        dc = self.dc
+                
+        pub = g.value(predicate=RDF.type, object=gc.ComputationalChemistryPublication)
+        if pub is None:
+            print "No gc:ComputationalChemistryPublication found"
+            exit()
+        pubParts = urlparse(pub)
+        #TODO better way to get base
+        base = urlunparse( (pubParts.scheme, pubParts.netloc, '/', '', '', '') )
+        g.bind('base', base)
+        ident = g.value(pub, dc.identifier)
+            
+        # create database
+        if odb is None:
+            self.dbname = ident
+        else:
+            self.dbname = odb
+        self.u = umdb(self.dbname)
+        self.u.create()
+    
+        # trick way to create namespaces from graph for use within this script
         for (prefix,suffix) in g.namespaces():
-            globals()[prefix] = Namespace(suffix) #  may replace gc and dc from above
+            #globals()[prefix] = Namespace(suffix) #  may replace gc and dc from above
             # put the namespace into the database, too; for each molecule_id because for FK but also because
             # the umdb file can contain molecules from multiple sources
-            u.insert_graph_context(prefix, suffix)
+            self.u.insert_graph_context(prefix, suffix)
+            
+        system=g.value(predicate=RDF.type, object=gc.MolecularSystem)
+        charge = g.value(g.value(system, gc.hasSystemCharge), gc.hasNumber).value
+        multiplicity = g.value(g.value(system, gc.hasSystemMultiplicity), gc.hasNumber).value
+    
+        # TODO: how to deal with individual molecules' charge, multiplicity
+        # loop over all mols in this system
+        for self.mol in g.subjects(RDF.type, gc.Molecule):
+            self.u.insert_molecule(self.mol, multiplicity=multiplicity, charge=charge)
+            #self.u.insert_graph_context("base", base)
+    
+            # molecule properties
+            inchi = g.value(self.mol, gc.hasInChIKey)
+            if inchi: self.u.insert_molproperty(ns="gc", name="hasInChIKey", value=inchi.value)
+    
+        atoms = self.insert_atoms()
+        self.insert_bonds(atoms)
+    
+        # get atom z(atomic number) values from symbol
+        self.u.symbol_to_z()
+        self.u.commit()
+    
+        return self.u
+    
+    def insert_atoms(self):
+        g = self.g
+        mol = self.mol
+        gc = self.gc
 
-        # molecule properties
-        inchi = g.value(mol, gc.hasInChIKey)
-        if inchi: u.insert_molproperty(ns="gc", name="hasInChIKey", value=inchi.value)
-
-        # atoms
         idx = 0
         atoms = []
         for atom in g.objects(mol, gc.hasAtom):
@@ -102,24 +145,37 @@ def make_umdb(g, odb):
             charge = g.value(g.value(atom, gc.hasFormalCharge), gc.hasNumber)
             idx += 1
             atoms.append(atom)
-            u.insert_atom(idx, name=atom, symbol=symbol, charge=charge)
+            self.u.insert_atom(idx, name=atom, symbol=symbol, charge=charge)
             for c in g.objects(atom, gc.hasCoordinates):
                 x = g.value(g.value(c, gc.hasAtomCoordinateX), gc.hasNumber)
                 y = g.value(g.value(c, gc.hasAtomCoordinateY), gc.hasNumber)
                 z = g.value(g.value(c, gc.hasAtomCoordinateZ), gc.hasNumber)
-                u.insert_atom_coord(idx, x, y, z)
-            for p in g.objects(atom, gc.MullikenCharges):
-                charge = g.value(g.value(system, gc.MullikenCharges), gc.hasNumber).value
-                u.insert_atomproperty(idx, ns="gc", name="MullikenCharges", value=charge)
+                self.u.insert_atom_coord(idx, x, y, z)                
+      
+        for prop in g.objects(subject=None, predicate=gc.hasAtomProperty):
+            #print prop
+            for pval in g.objects(prop, gc.hasPropertyValue):
+                val = g.value(pval, gc.hasNumber).value
+                #ref = g.value(pval, gc.hasScope)
+                #TODO get atom index from ref
+                ptype = g.value(pval, RDF.type)
+                (suffix,prefix) = parseURI(g, ptype)
+                #print  suffix+'.'+prefix, ref, charge
+                self.u.insert_atomproperty(idx, ns=suffix, name=prefix, value=val)
+    
+        return atoms
+    
+    def insert_bonds(self, atoms):
+        g = self.g
+        gc = self.gc
 
-        # bonds
         for bond in g.subjects(RDF.type, gc.NormalBond):
             bond_order_val = g.value(bond, gc.hasBondOrder)
             bond_type = g.value(bond, gc.hasBondType)
             if bond_order_val is None:
-                bond_order = 1+bondOrderValues.index(bond_type.value)
+                bond_order = 1+self.bondOrderValues.index(bond_type.value)
             else:
-                bond_order = 1+bondOrderTypes.index(bond_type)
+                bond_order = 1+self.bondOrderTypes.index(bond_type)
             # set ensures unique entries; should only be two members/atoms
             pair = set()
             # two ways to get the atoms of this bond
@@ -131,32 +187,22 @@ def make_umdb(g, odb):
                 pair.add(1+atoms.index(a))
             to_atom = pair.pop()
             from_atom = pair.pop()
-            u.insert_bond(from_atom, to_atom, bond_order, name=bond)
-            u.insert_bondproperty(from_atom, to_atom, ns="gc", name="hasBondType", value=bond_type)
-            u.insert_bondproperty(from_atom, to_atom, ns="rdfs", name="label", value=g.label(bond).value)
-
-    # get atom z(atomic number) values from symbol
-    u.symbol_to_z()
-    u.close()
-
-    return udb
+            self.u.insert_bond(from_atom, to_atom, bond_order, name=bond)
+            self.u.insert_bondproperty(from_atom, to_atom, ns="gc", name="hasBondType", value=bond_type)
+            self.u.insert_bondproperty(from_atom, to_atom, ns="rdfs", name="label", value=g.label(bond).value)
 
 class SQLgraph:
-    def __init__(self, db):
-        self.connection = sqlite3.connect(db)
-        self.cursor = self.connection.cursor()
+    def __init__(self, g, cursor):
+        self.g = g
+        self.cursor = cursor
         self.cursor.execute("Create Table node (id Integer Primary Key, val Text, term Text, datatype Text, Unique(val,term,datatype))")
         self.cursor.execute("Create Table nodegraph (subject_node Integer, predicate_node Integer, object_node Integer)")
-
-    def close(self):
-        self.connection.commit()
-        self.connection.close()
 
     def insert(self, x):
         if type(x) == term.BNode:
             return self.node(x,'bnode','')
         elif type(x) == term.URIRef:
-            return self.node(x,'uri','')
+            return self.node(shorten(self.g,x),'uri','')
         elif type(x) == term.Literal:
             return self.node(x,'literal',x.datatype)
             #return self.node(x,'literal','')
@@ -170,7 +216,7 @@ class SQLgraph:
             self.cursor.execute("Select id from node Where val = ? And term = ? And datatype is null", [x,term])
         return self.cursor.fetchone()[0]
 
-    def insert_triple(self, s,p,o):
+    def insert_triple(self, s,p,o):           
         sql = "Insert Into nodegraph (subject_node, predicate_node, object_node) Values (?,?,?)"
         sid = self.insert(s)
         pid = self.insert(p)
@@ -180,9 +226,10 @@ class SQLgraph:
 def main():
 
     odb = None
-    input = None
+    source = None
     print_counts = False
     include_graph = False
+    fmt = None
     args = sys.argv
     args.pop(0) # program name
     while len(args) > 0:
@@ -192,6 +239,7 @@ def main():
             print "       if no input, expect stdin."
             print "       if no output given, output file name is guessed from input graph's metadata."
             print "  [-h] this message"
+            print "  [-f] input format"
             print "  [-o] output umdb file name."
             print "  [-c] print counts of graph's Types(objects with predicate==rdf.Type) and Properties(predicates)."
             print "  [-g] include graph's triples in output database."
@@ -200,27 +248,29 @@ def main():
             print_counts = True
         elif arg == "-g":
             include_graph = True
+        elif arg == "-f":
+            fmt = args.pop(0)
         elif arg == "-o":
-            arg = args.pop(0)
-            odb = arg
+            odb = args.pop(0)
         else:
-            if input is None:
-                input = arg
+            if source is None:
+                source = arg
             else:
                 print "unexpected extra arg",arg
                 exit()
 
-    #print input, odb
-    g = get_graph(input)
+    #print source, odb
+    g = get_graph(source, fmt)
 #  print g.serialize(format="turtle")
     if print_counts: counts(g)
-    udb = make_umdb(g, odb)
+    u = UMDB(g)
+    udb = u.make(g, odb)
     if include_graph:
-        print udb
-        sg = SQLgraph(udb)
+        sg = SQLgraph(g, udb.cursor)
         for (s,p,o) in g:
             sg.insert_triple(s,p,o)
-        sg.close()
-
+            udb.insert_graph_triple(shorten(g,s), shorten(g,p), shorten(g,o))
+    
+    udb.close()
 if __name__ == "__main__":
     main()
