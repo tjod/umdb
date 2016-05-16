@@ -116,8 +116,10 @@ class UMDB:
         self.cursor = self.udb.cursor
         
         # add tables for rdf triples, context, etc.
-        script = open('rdf.sql').read()
-        self.cursor.executescript(script)
+        self.cursor.execute("Select count(*) from sqlite_master Where tbl_name='graph_context'")
+        if self.cursor.fetchone()[0] == 0:
+            script = open('rdf.sql').read()
+            self.cursor.executescript(script)
     
         for (prefix,suffix) in g.namespaces():
             # trick way to create namespaces from graph for use within this script
