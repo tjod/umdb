@@ -107,16 +107,6 @@ class umdb:
 		sql = "update atom set symbol=(select symbol from e.element where atom.z=element.z)"
 		self.cursor.execute(sql)
 
-	def insert_graph_context(self, prefix, suffix):
-		sql = "Insert Into graph_context (prefix, suffix) Values (?,?)"
-		sqlargs = [prefix, suffix]
-		self.cursor.execute(sql, sqlargs)
-
-	def insert_graph_triple(self, s, p, o):
-		sql = "Insert Into graph_triple (subject, predicate, object) Values (?,?,?)"
-		sqlargs = [s,p,o]
-		self.cursor.execute(sql, sqlargs)
-
 import sys
 if __name__ == '__main__':
 
