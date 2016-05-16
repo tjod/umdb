@@ -9,11 +9,9 @@ CREATE TABLE If Not Exists molecule (
 
 CREATE TABLE If Not Exists property (
 	molecule_id INTEGER NOT NULL,
-	ns TEXT,
 	name TEXT NOT NULL,
 	value TEXT NOT NULL,
 	FOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id) ON DELETE CASCADE ON UPDATE CASCADE
-	FOREIGN KEY (ns) REFERENCES graph_context (prefix)
 );
 CREATE INDEX If Not Exists property_idx ON property (molecule_id);
 
@@ -48,11 +46,9 @@ CREATE TABLE If Not Exists bond (
 CREATE TABLE If Not Exists atom_property (
 	molecule_id INTEGER NOT NULL,
 	atom_number INTEGER NOT NULL,
-	ns TEXT,
 	name TEXT NOT NULL,
 	value TEXT NOT NULL,
 	FOREIGN KEY (molecule_id, atom_number) REFERENCES atom (molecule_id, atom_number) ON DELETE CASCADE ON UPDATE CASCADE
-	FOREIGN KEY (ns) REFERENCES graph_context (prefix)
 );
 CREATE INDEX If Not Exists atom_property_idx ON atom_property (molecule_id, atom_number);
 
@@ -60,11 +56,9 @@ CREATE TABLE If Not Exists bond_property (
 	molecule_id INTEGER NOT NULL,
 	from_atom INTEGER NOT NULL,
 	to_atom INTEGER NOT NULL,
-	ns TEXT,
 	name TEXT NOT NULL,
 	value TEXT NOT NULL,
 	FOREIGN KEY (molecule_id, from_atom, to_atom) REFERENCES bond (molecule_id, from_atom, to_atom) ON DELETE CASCADE ON UPDATE CASCADE
-	FOREIGN KEY (ns) REFERENCES graph_context (prefix)
 );
 CREATE INDEX If Not Exists bond_property_idx ON bond_property (molecule_id, from_atom, to_atom);
 
@@ -115,16 +109,4 @@ CREATE TABLE If Not Exists residue_atom (
 	CONSTRAINT residue_atom_pkey PRIMARY KEY (molecule_id, atom_number)
 	FOREIGN KEY (molecule_id, atom_number) REFERENCES atom (molecule_id, atom_number) ON DELETE CASCADE ON UPDATE CASCADE
 	FOREIGN KEY (molecule_id, chain, number) REFERENCES residue (molecule_id, chain, number) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-Create Table If Not Exists graph_context(
-	prefix Text,
-	suffix Text,
-	CONSTRAINT namespace_pkey PRIMARY KEY (prefix)
-);
-
-Create Table If Not Exists graph_triple(
-	subject Text,
-	predicate Text,
-	object Text
 );

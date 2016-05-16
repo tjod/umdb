@@ -1,5 +1,4 @@
 import sqlite3
-import json
 
 class umdb:
 	"""create umdb file and insert molecule, atoms, bonds, properties"""
