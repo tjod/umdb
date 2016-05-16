@@ -94,7 +94,7 @@ def main():
     if include_graph:
         for (s,p,o) in g:
             u.insert_triple(s,p,o)
-            u.insert_graph_triple(u.shortenURI(g,s), u.shortenURI(g,p), u.shortenURI(g,o))
+            u.insert_graph_triple(u.shortenURI(s), u.shortenURI(p), u.shortenURI(o))
 
     u.close()
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ class umdb:
     def shortenURI(self, x):
         """try to turn URIRef into namsepace prefix:suffix style"""
         if type(x) == term.URIRef:
-            (prefix,suffix) = self.parseURI(self.g, x)
+            (prefix,suffix) = self.parseURI(x)
             # do we allow to shorten base?
             #if prefix is not None and prefix != 'base': x = prefix+':'+suffix
             if prefix is not None: x = prefix+':'+suffix
@@ -74,7 +74,7 @@ class umdb:
         # add tables for rdf triples, context, etc.
         self.cursor.execute("Select count(*) from sqlite_master Where tbl_name='graph_context'")
         if self.cursor.fetchone()[0] == 0:
-            script = open('rdf.sql').read()
+            script = open('gcmol.sql').read()
             self.cursor.executescript(script)
     
         for (prefix,suffix) in g.namespaces():
@@ -177,7 +177,7 @@ class umdb:
         if type(x) == term.BNode:
             return self.node(x,'bnode','')
         elif type(x) == term.URIRef:
-            return self.node(self.shortenURI(self.g,x),'uri','')
+            return self.node(self.shortenURI(x),'uri','')
         elif type(x) == term.Literal:
             return self.node(x,'literal',x.datatype)
             #return self.node(x,'literal','')
@@ -202,7 +202,7 @@ class umdb:
         
     def insert_graph_context(self, prefix, suffix):
         """namespace and name for the context, ala tutrle, json-ld"""
-        sql = "Insert Into graph_context (prefix, suffix) Values (?,?)"
+        sql = "Insert Or Ignore Into graph_context (prefix, suffix) Values (?,?)"
         sqlargs = [prefix, suffix]
         self.cursor.execute(sql, sqlargs)
 
@@ -213,6 +213,8 @@ class umdb:
         self.cursor.execute(sql, sqlargs)
 
     def close(self):
-        """close the index to speed up references to the nodegraph table"""
-        self.cursor.execute("Create Index node_index On nodegraph (subject_node, predicate_node, object_node)")
+        """close the database and create index to speed up references to the nodegraph table"""
+        self.cursor.execute("Select count(*) from sqlite_master Where tbl_name='nodegraph' And type='index'")
+        if self.cursor.fetchone()[0] == 0:
+            self.cursor.execute("Create Index node_index On nodegraph (subject_node, predicate_node, object_node)")
         self.udb.close()
