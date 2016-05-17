@@ -72,10 +72,8 @@ class umdb:
         g = self.g
                         
         # add tables for rdf triples, context, etc.
-        self.cursor.execute("Select count(*) from sqlite_master Where tbl_name='graph_context'")
-        if self.cursor.fetchone()[0] == 0:
-            script = open('gcmol.sql').read()
-            self.cursor.executescript(script)
+        script = open('gcmol.sql').read()
+        self.cursor.executescript(script)
     
         for (prefix,suffix) in g.namespaces():
             # trick way to create namespaces from graph for use within this script
@@ -202,7 +200,7 @@ class umdb:
         
     def insert_graph_context(self, prefix, suffix):
         """namespace and name for the context, ala tutrle, json-ld"""
-        sql = "Insert Or Ignore Into graph_context (prefix, suffix) Values (?,?)"
+        sql = "Insert Or Ignore Into context (prefix, suffix) Values (?,?)"
         sqlargs = [prefix, suffix]
         self.cursor.execute(sql, sqlargs)
 

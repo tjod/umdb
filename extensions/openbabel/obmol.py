@@ -1,9 +1,9 @@
 #import sqlite3
 import openbabel as ob
 import json
-from umdb import umdb
+from umdb import umdb as umdbCore
 
-class umdb_openbabel:
+class umdb:
 	"""create umdb file to read files in openbabel supported formats; relies on umdb.py"""
 	def __init__(self, out):
 		"""out is output database name"""
@@ -13,7 +13,7 @@ class umdb_openbabel:
 		ob.OBStereo.ImplicitRef = 4294967294
 		self.ElementTable = ob.OBElementTable()
 		if out:
-			self.db = umdb(out)
+			self.db = umdbCore(out)
 
 	def create(self):
 		"""create the umdb file"""
@@ -387,4 +387,4 @@ if __name__ == '__main__':
 	if len(sys.argv) == 1:
 		exit(0)
 	db = sys.argv[1]
-	u = umdb(db)
+	u = umdbCore(db)

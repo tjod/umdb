@@ -2,7 +2,7 @@ import sqlite3
 import sys
 import os
 import openbabel as ob
-from umdb_openbabel import umdb_openbabel as db
+from obmol import umdb as db
 import getopt
 
 # create a umdb from any molecular structure file that openbabel can read
@@ -30,8 +30,9 @@ def getargs():
     if opt == "-t": addtypes = True
     if opt == "-c": addcharges = True
 
-  fullfile = args[0]
-  if not os.path.exists(fullfile):
+  fullfile = None
+  if len(args) > 0: fullfile = args[0]
+  if fullfile is None or not os.path.exists(fullfile):
     print 'usage: obmol.py input_file [output_database]'
     exit()
   fhead, ftail = os.path.split(fullfile)

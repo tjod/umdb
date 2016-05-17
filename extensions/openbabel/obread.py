@@ -1,6 +1,6 @@
 import openbabel as ob
 #import sqlite3
-from umdb_openbabel import umdb_openbabel as umdb
+from obmol import umdb
 import sys
 
 compare = False
