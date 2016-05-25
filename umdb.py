@@ -116,7 +116,7 @@ class umdb:
 import sys
 if __name__ == '__main__':
 
-	if len(sys.argv) == 1:
-		exit(0)
-	db = sys.argv[1]
-	u = umdb(db)
+	if len(sys.argv) > 1:
+		db = sys.argv[1]
+		u = umdb(db)
+		u.create()
