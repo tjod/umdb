@@ -60,7 +60,7 @@ def main():
     while len(args) > 0:
         arg = args.pop(0)
         if arg == "-h":
-            print "usage: rdf2umdb [-h][-c][-g][-o output][input]"
+            print "usage: gc2umdb [-h][-c][-g][-o output][input]"
             print "       if no input, expect stdin."
             print "       if no output given, output file name is guessed from input graph's metadata."
             print "  [-h] this message"

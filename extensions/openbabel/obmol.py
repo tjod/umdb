@@ -74,18 +74,22 @@ class umdb:
 			self.insert_bonds(obmol)
 			self.insert_bondproperties(obmol)
 		self.db.commit()
-
-	def insert_molproperty(self, name, value):
-		"""insert a molecule property for current molecule"""
-		self.db.insert_molproperty(name, value)
-
-	def insert_atomproperty(self, atom_number, name, value):
-		"""insert an atom property for current molecule"""
-		self.db.insert_atomproperty(atom_number, name, value)
-
-	def insert_bondproperty(self, atoma, atomb, name, value):
+		
+	def insert_context(self, prefix, suffix):
 		"""insert a bond property for current molecule"""
-		self.db.insert_bondproperty(atoma, atomb, name, value)
+		self.db.insert_context(prefix, suffix)
+
+	def insert_molproperty(self, name, value, ns=None):
+		"""insert a molecule property for current molecule"""
+		self.db.insert_molproperty(name, value, ns=ns)
+
+	def insert_atomproperty(self, atom_number, name, value, ns=None):
+		"""insert an atom property for current molecule"""
+		self.db.insert_atomproperty(atom_number, name, value, ns=ns)
+
+	def insert_bondproperty(self, atoma, atomb, name, value, ns=None):
+		"""insert a bond property for current molecule"""
+		self.db.insert_bondproperty(atoma, atomb, name, value, ns=ns)
 
 	def insert_atomproperties(self, obmol):
 		"""loop over openbabel atoms' properties and insert each"""

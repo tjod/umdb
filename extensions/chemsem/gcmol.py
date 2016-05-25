@@ -200,9 +200,7 @@ class umdb:
         
     def insert_graph_context(self, prefix, suffix):
         """namespace and name for the context, ala tutrle, json-ld"""
-        sql = "Insert Or Ignore Into context (prefix, suffix) Values (?,?)"
-        sqlargs = [prefix, suffix]
-        self.cursor.execute(sql, sqlargs)
+        self.udb.insert_context(prefix, suffix)
 
     def insert_graph_triple(self, s, p, o):
         """insert the raw graph triple"""

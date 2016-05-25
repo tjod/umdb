@@ -92,6 +92,12 @@ class umdb:
 		ressql = "Insert into residue_atom (molecule_id, number, chain, atom_number, name) Values (?,?,?,?,?)"
 		sqlargs = [self.molid, resnum, chain, idx, name]
 		self.cursor.execute(ressql, sqlargs)
+		
+	def insert_context(self, prefix, suffix):
+		"""namespace and name for the context used in properties tables"""
+		sql = "Insert Or Ignore Into context (prefix, suffix) Values (?,?)"
+		sqlargs = [prefix, suffix]
+		self.cursor.execute(sql, sqlargs)
 
 	def symbol_to_z(self):
 		"""utility to populate atom z (atomic number) from symbol column"""
