@@ -57,7 +57,7 @@ class umdb:
             
         # create database
         if odb is None:
-            self.dbname = ident
+            self.dbname = ident+'.umdb'
         else:
             self.dbname = odb
         self.udb = umdbCore(self.dbname)
