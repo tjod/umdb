@@ -20,6 +20,17 @@ class umdb:
         self.bondOrderValues = ["Single", "Double", "Triple", "Dummy", "Aromatic"]
         # when bonds are stored as uri refs
         self.bondOrderTypes  = [self.gc.Single, self.gc.Double, self.gc.Triple, "Dummy", self.gc.Aromatic]
+	# extra tables needed for this extension
+	self.sql = """
+Create Table If Not Exists graph_triple(
+	subject Text,
+	predicate Text,
+	object Text
+);
+
+Create Table node (id Integer Primary Key, val Text, term Text, datatype Text, Unique(val,term,datatype));
+Create Table nodegraph (subject_node Integer, predicate_node Integer, object_node Integer);
+"""
         
     def parseURI(self, uri):
         """parse a URIRef into a prefix(in graph namespaces) and suffix"""
@@ -71,9 +82,10 @@ class umdb:
         #handy
         g = self.g
                         
-        # add tables for rdf triples, context, etc.
-        script = open('gcmol.sql').read()
-        self.cursor.executescript(script)
+        # add tables for rdf triples, etc.
+        #script = open('gcmol.sql').read()
+	script = self.sql
+	self.cursor.executescript(script)
     
         for (prefix,suffix) in g.namespaces():
             # trick way to create namespaces from graph for use within this script
