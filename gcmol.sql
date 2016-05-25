@@ -1,0 +1,1 @@
+extensions/chemsem/gcmol.sql
