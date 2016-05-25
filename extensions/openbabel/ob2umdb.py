@@ -6,6 +6,13 @@ import getopt
 
 # create a umdb from any molecular structure file that openbabel can read
 
+def usage():
+    print 'usage: ob2umdb.py [-p][-h] input_file [output_database]'
+    print '       -h this help'
+    print '       -p include cansmiles, inchi, E/Z bond into, R/S atom info'
+    print '       -t include atom types in atom properties'
+    print '       -c include Gasteiger partial charges in atom properties'
+
 def getargs():
 
     addprop = False
@@ -16,15 +23,10 @@ def getargs():
     except getopt.GetoptError as err:
         print err
         exit()
-
     for opt,val in opts:
         if opt == "-h":
-            print 'usage: ob2umdb.py [-p][-h] input_file [output_database]'
-            print '       -h this help'
-            print '       -p include cansmiles, inchi, E/Z bond into, R/S atom info'
-            print '       -t include atom types in atom properties'
-            print '       -c include Gasteiger partial charges in atom properties'
-            exit()
+		usage()
+		exit()
         if opt == "-p": addprop = True
         if opt == "-t": addtypes = True
         if opt == "-c": addcharges = True
@@ -32,7 +34,7 @@ def getargs():
     fullfile = None
     if len(args) > 0: fullfile = args[0]
     if fullfile is None or not os.path.exists(fullfile):
-        print 'usage: obmol.py input_file [output_database]'
+        usage()
         exit()
     fhead, ftail = os.path.split(fullfile)
     filename, fileext = os.path.splitext(ftail)
